@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://bw1h3gyq6yg2x"]
+
+[ext_resource type="Texture2D" uid="uid://dok5hq0awp215" path="res://preview.gif" id="1_o8fq1"]
+[ext_resource type="Script" uid="uid://tfoin5jteh51" path="res://Scripts/WallpaperPreview.cs" id="1_v73oy"]
+
+[node name="WallpaperPreview" type="PanelContainer" unique_id=1473021637 node_paths=PackedStringArray("Preview", "Label")]
+offset_right = 256.0
+offset_bottom = 192.0
+script = ExtResource("1_v73oy")
+Preview = NodePath("TextureRect")
+Label = NodePath("PanelContainer/Label")
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=789235056]
+layout_mode = 2
+texture = ExtResource("1_o8fq1")
+expand_mode = 5
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=1410229158]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 8
+
+[node name="Label" type="Label" parent="PanelContainer" unique_id=61428724]
+custom_minimum_size = Vector2(256, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Hornet Taking a Break (Hollow Knight: Silksong - Ambient..."
+horizontal_alignment = 1
+vertical_alignment = 2
+autowrap_mode = 3

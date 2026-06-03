@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://bfu6exwk5db5k"]
+
+[ext_resource type="Script" uid="uid://bxhf3ktre30k2" path="res://Scripts/WELoader.cs" id="1_1h7kx"]
+[ext_resource type="PackedScene" uid="uid://bw1h3gyq6yg2x" path="res://Scenes/wallpaper_preview.tscn" id="2_5v4cw"]
+
+[node name="Wallpapers" type="Control" unique_id=2099854384]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=1885111607]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FlowContainer" type="FlowContainer" parent="PanelContainer" unique_id=1429505857]
+layout_mode = 2
+
+[node name="WELoader" type="Node" parent="." unique_id=46521743 node_paths=PackedStringArray("WallpaperPreviewContainer")]
+script = ExtResource("1_1h7kx")
+WallpaperPreviewContainer = NodePath("../PanelContainer/FlowContainer")
+WallpaperPreviewScene = ExtResource("2_5v4cw")
