@@ -11,6 +11,9 @@ public partial class WELoader : Node
     [Export]
     PackedScene WallpaperPreviewScene;
 
+    [Signal]
+    public delegate void WallpaperLoadedEventHandler(WallpaperPreview wallpaper);
+
     const string ProjectName = @"\project.json";
 
     public override void _Ready()
@@ -55,6 +58,7 @@ public partial class WELoader : Node
             preview.Info = info;
             LoadPreviewImage(preview, dir.GetCurrentDir() + "\\" + folderName);
             WallpaperPreviewContainer.AddChild(preview);
+            EmitSignal(SignalName.WallpaperLoaded, preview);
         }
     }
 

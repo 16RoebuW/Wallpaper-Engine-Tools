@@ -1,12 +1,13 @@
 using Godot;
 using System;
 
-public partial class WallpaperPreview : PanelContainer
+public partial class WallpaperPreview : BaseButton
 {
     [Export]
     public TextureRect Preview;
     [Export]
     public Label Label;
+
     public WallpaperInfo Info { get; set; }
 
     public Texture2D PreviewImage = null;

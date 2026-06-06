@@ -8,8 +8,9 @@ public partial class WallpaperInfo
     public string Identifier { get; }
     public string Title { get; }
     public string PreviewPath { get; } = null;
+    public System.Collections.Generic.HashSet<string> Tags { get; } = [];
 
-    public Dictionary CustomData { get; set; }
+    private Dictionary CustomData = [];
 
     public static WallpaperInfo From(string json, string folderName)
     {
@@ -21,13 +22,6 @@ public partial class WallpaperInfo
             return null;
         }
         var dict = parser.Data.AsGodotDictionary();
-
-        //if (!dict.ContainsKey("workshopid")) 
-        //{
-        //    GD.PrintErr("workshopid was missing");
-        //    return null;
-        //}
-        //var id = dict["workshopid"].AsInt64();
 
         if (!dict.ContainsKey("title"))
         {
@@ -45,11 +39,27 @@ public partial class WallpaperInfo
         return new WallpaperInfo(dict, folderName, title, preview);
     }
 
+    private void LoadTags(Dictionary tagDict)
+    {
+        if (!tagDict.ContainsKey("tags"))
+        {
+            return;
+        }
+
+        foreach (var tag in tagDict["tags"].AsGodotArray())
+        {
+            Tags.Add(tag.ToString());
+        }
+    }
+
     private WallpaperInfo(Dictionary data, string id, string title, string previewPath)
     {
         WEData = data;
         Identifier = id;
         Title = title;
         PreviewPath = previewPath;
+
+        LoadTags(WEData);
+        LoadTags(CustomData);
     }
 }

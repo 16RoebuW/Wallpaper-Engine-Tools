@@ -6,12 +6,14 @@ Provides some simple tools for managing wallpaper engine wallpapers until better
 - None yet
 
 # To do:
-- Proper UI
 - Load local wallpapers
 - Custom tags
 - Internal persistent storage
 - Generate playlists based on tags
+- Filter by tag
+- Add custom tags
 - Some more docs
+- Steam API for proper titles: https://partner.steamgames.com/doc/sdk/api
 
 # Build dependencies
 - https://github.com/BOTLANNER/godot-gif

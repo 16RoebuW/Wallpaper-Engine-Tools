@@ -1,0 +1,11 @@
+[gd_resource type="Theme" format=3 uid="uid://btch3e1y0e4yo"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_m0haj"]
+bg_color = Color(0.67, 0.1742, 0.1742, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[resource]
+Button/styles/hover = SubResource("StyleBoxFlat_m0haj")

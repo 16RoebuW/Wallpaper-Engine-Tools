@@ -1,7 +1,25 @@
 [gd_scene format=3 uid="uid://bfu6exwk5db5k"]
 
 [ext_resource type="Script" uid="uid://bxhf3ktre30k2" path="res://Scripts/WELoader.cs" id="1_1h7kx"]
+[ext_resource type="Texture2D" uid="uid://bpkdufx0trn50" path="res://Icons/gear-solid.png" id="1_4p432"]
+[ext_resource type="Texture2D" uid="uid://dok5hq0awp215" path="res://preview.gif" id="1_43o50"]
+[ext_resource type="Theme" uid="uid://dxpd6rckn4unn" path="res://Themes/main_theme.tres" id="1_tmsnl"]
 [ext_resource type="PackedScene" uid="uid://bw1h3gyq6yg2x" path="res://Scenes/wallpaper_preview.tscn" id="2_5v4cw"]
+[ext_resource type="PackedScene" uid="uid://d3gxrhcawkiu4" path="res://Scenes/tag_button.tscn" id="2_g8jsr"]
+[ext_resource type="Theme" uid="uid://cuxc4yyeyw8ej" path="res://Themes/hero_button.tres" id="5_ucp0k"]
+[ext_resource type="Script" uid="uid://cajodgb4wqc73" path="res://Scripts/UiController.cs" id="8_epkga"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_epkga"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+bg_color = Color(0.1, 0.1, 0.1, 0.6)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
 
 [node name="Wallpapers" type="Control" unique_id=2099854384]
 layout_mode = 3
@@ -10,8 +28,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("1_tmsnl")
 
-[node name="PanelContainer" type="PanelContainer" parent="." unique_id=1885111607]
+[node name="Body" type="PanelContainer" parent="." unique_id=1885111607]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,10 +38,145 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="FlowContainer" type="FlowContainer" parent="PanelContainer" unique_id=1429505857]
+[node name="VBoxContainer" type="VBoxContainer" parent="Body" unique_id=1957225384]
 layout_mode = 2
+
+[node name="OptionsBar" type="PanelContainer" parent="Body/VBoxContainer" unique_id=616148707]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_epkga")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Body/VBoxContainer/OptionsBar" unique_id=1262448695]
+layout_mode = 2
+alignment = 1
+
+[node name="OptionsButton" type="Button" parent="Body/VBoxContainer/OptionsBar/HBoxContainer" unique_id=423289254]
+layout_mode = 2
+size_flags_horizontal = 2
+text = "      "
+icon = ExtResource("1_4p432")
+icon_alignment = 1
+expand_icon = true
+
+[node name="LineEdit" type="LineEdit" parent="Body/VBoxContainer/OptionsBar/HBoxContainer" unique_id=1496631291]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+placeholder_text = "Search..."
+
+[node name="Control" type="Control" parent="Body/VBoxContainer/OptionsBar/HBoxContainer" unique_id=788168239]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Browser" type="HSplitContainer" parent="Body/VBoxContainer" unique_id=2051906914]
+layout_mode = 2
+size_flags_vertical = 3
+dragging_enabled = false
+dragger_visibility = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Body/VBoxContainer/Browser" unique_id=2066032603]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Body/VBoxContainer/Browser/ScrollContainer" unique_id=1588124585]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Wallpapers" type="FlowContainer" parent="Body/VBoxContainer/Browser/ScrollContainer/VBoxContainer" unique_id=1429505857]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ScrollSpacer" type="Control" parent="Body/VBoxContainer/Browser/ScrollContainer/VBoxContainer" unique_id=1357822708]
+custom_minimum_size = Vector2(0, 500)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DetailsPanel" type="Panel" parent="Body/VBoxContainer/Browser" unique_id=1176715614]
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.2
+
+[node name="MarginContainer" type="MarginContainer" parent="Body/VBoxContainer/Browser/DetailsPanel" unique_id=28555340]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer" unique_id=928649369]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer" unique_id=1394952320]
+custom_minimum_size = Vector2(256, 256)
+layout_mode = 2
+texture = ExtResource("1_43o50")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer" unique_id=403033]
+custom_minimum_size = Vector2(256, 49)
+layout_mode = 2
+size_flags_vertical = 0
+text = "Hornet Taking a Break (Hollow Knight: Silksong - Ambient..."
+horizontal_alignment = 1
+autowrap_mode = 3
+text_overrun_behavior = 4
+max_lines_visible = 2
+
+[node name="LineEdit" type="LineEdit" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer" unique_id=531387944]
+layout_mode = 2
+placeholder_text = "Add tag..."
+
+[node name="PopupMenu" type="PopupMenu" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/LineEdit" unique_id=1306842891]
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer" unique_id=945438554]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ScrollSpacerContainer" type="VBoxContainer" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/ScrollContainer" unique_id=441178343]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="TagButtonContainer" type="VBoxContainer" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/ScrollContainer/ScrollSpacerContainer" unique_id=1590488261]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ScrollSpacer" type="Control" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/ScrollContainer/ScrollSpacerContainer" unique_id=1048295346]
+custom_minimum_size = Vector2(0, 500)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PanelContainer" type="PanelContainer" parent="Body" unique_id=46645509]
+layout_mode = 2
+size_flags_vertical = 8
+
+[node name="MarginContainer" type="MarginContainer" parent="Body/PanelContainer" unique_id=1633034654]
+layout_mode = 2
+
+[node name="CreateButton" type="Button" parent="Body/PanelContainer/MarginContainer" unique_id=1507033522]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("5_ucp0k")
+text = "Create Playlist"
 
 [node name="WELoader" type="Node" parent="." unique_id=46521743 node_paths=PackedStringArray("WallpaperPreviewContainer")]
 script = ExtResource("1_1h7kx")
-WallpaperPreviewContainer = NodePath("../PanelContainer/FlowContainer")
+WallpaperPreviewContainer = NodePath("../Body/VBoxContainer/Browser/ScrollContainer/VBoxContainer/Wallpapers")
 WallpaperPreviewScene = ExtResource("2_5v4cw")
+
+[node name="UIController" type="Node" parent="." unique_id=464476138 node_paths=PackedStringArray("TagContainer", "TagSearchBox", "TagSearchPopup", "DetailsTitle", "DetailsPreview")]
+script = ExtResource("8_epkga")
+TagOptionScene = ExtResource("2_g8jsr")
+TagContainer = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/ScrollContainer/ScrollSpacerContainer/TagButtonContainer")
+TagSearchBox = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/LineEdit")
+TagSearchPopup = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/LineEdit/PopupMenu")
+DetailsTitle = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/Label")
+DetailsPreview = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/TextureRect")
+
+[connection signal="WallpaperLoaded" from="WELoader" to="UIController" method="OnWallpaperLoaded"]

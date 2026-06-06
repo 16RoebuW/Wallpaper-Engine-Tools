@@ -3,24 +3,39 @@
 [ext_resource type="Texture2D" uid="uid://dok5hq0awp215" path="res://preview.gif" id="1_o8fq1"]
 [ext_resource type="Script" uid="uid://tfoin5jteh51" path="res://Scripts/WallpaperPreview.cs" id="1_v73oy"]
 
-[node name="WallpaperPreview" type="PanelContainer" unique_id=1473021637 node_paths=PackedStringArray("Preview", "Label")]
+[node name="WallpaperPreview" type="Button" unique_id=1685030092 node_paths=PackedStringArray("Preview", "Label", "Button")]
+custom_minimum_size = Vector2(261, 261)
 offset_right = 256.0
-offset_bottom = 192.0
+offset_bottom = 256.0
 script = ExtResource("1_v73oy")
-Preview = NodePath("TextureRect")
-Label = NodePath("PanelContainer/Label")
+Preview = NodePath("MarginContainer/TextureRect")
+Label = NodePath("MarginContainer/PanelContainer/Label")
+Button = NodePath(".")
 
-[node name="TextureRect" type="TextureRect" parent="." unique_id=789235056]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=443208177]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer" unique_id=789235056]
 layout_mode = 2
 texture = ExtResource("1_o8fq1")
 expand_mode = 5
 
-[node name="PanelContainer" type="PanelContainer" parent="." unique_id=1410229158]
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer" unique_id=1410229158]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 8
 
-[node name="Label" type="Label" parent="PanelContainer" unique_id=61428724]
+[node name="Label" type="Label" parent="MarginContainer/PanelContainer" unique_id=61428724]
 custom_minimum_size = Vector2(256, 0)
 layout_mode = 2
 size_flags_horizontal = 4

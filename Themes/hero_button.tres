@@ -1,0 +1,36 @@
+[gd_resource type="Theme" format=3 uid="uid://cuxc4yyeyw8ej"]
+
+[ext_resource type="StyleBox" uid="uid://gr5emiqmqj4t" path="res://Themes/hero_button_style_box.tres" id="1_2fcns"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1vpmr"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+bg_color = Color(0, 0.5137255, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_iu1hb"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+bg_color = Color(0, 0.3568903, 0.7090871, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[resource]
+Button/font_sizes/font_size = 24
+Button/styles/focus = SubResource("StyleBoxFlat_1vpmr")
+Button/styles/hover = SubResource("StyleBoxFlat_iu1hb")
+Button/styles/normal = ExtResource("1_2fcns")
+Button/styles/pressed = ExtResource("1_2fcns")
