@@ -39,6 +39,12 @@ public partial class WallpaperInfo
         return new WallpaperInfo(dict, folderName, title, preview);
     }
 
+    public void AddCustomData(Dictionary data)
+    {
+        CustomData = data;
+        LoadTags(CustomData);
+    }
+
     private void LoadTags(Dictionary tagDict)
     {
         if (!tagDict.ContainsKey("tags"))
@@ -60,6 +66,5 @@ public partial class WallpaperInfo
         PreviewPath = previewPath;
 
         LoadTags(WEData);
-        LoadTags(CustomData);
     }
 }

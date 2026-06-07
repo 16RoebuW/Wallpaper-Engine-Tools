@@ -1,6 +1,7 @@
 using Godot;
 using Godot.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System;
 
 using Dictionary = Godot.Collections.Dictionary;
@@ -21,8 +22,11 @@ public partial class UiController : Node
     TextureRect DetailsPreview;
     [Export]
     Theme MainTheme;
+    [Export]
+    Container WallpaperContainer;
 
-    private HashSet<string> builtinTags = [];
+    private Godot.Collections.Dictionary<string, Color> builtinTags = [];
+    private Godot.Collections.Dictionary<string, Color> customTags = [];
     private WallpaperInfo selectedWallpaper;
 
     private HashSet<TagButton> filteredTags = [];
@@ -32,7 +36,7 @@ public partial class UiController : Node
 
     public override void _Ready()
     {
-        var prefs = LoadPrefs();
+        var prefs = LoadWEPrefs();
         if (prefs is null)
         {
             GD.PrintErr("Failed to load preferences!!");
@@ -41,12 +45,24 @@ public partial class UiController : Node
 
         LoadBuiltinTags(prefs);
 
-        foreach (var tag in builtinTags)
+        foreach (var kv in builtinTags)
         {
-            AddTagNodeToDetailsPane(tag, true);
+            AddTagNodeToDetailsPane(kv.Key, true, kv.Value);
+        }
+
+        LoadCustomTags();
+
+        foreach (var kv in customTags)
+        {
+            AddTagNodeToDetailsPane(kv.Key, colour: kv.Value);
         }
 
         TagSearchBox.Editable = false;
+    }
+
+    private void LoadCustomTags()
+    {
+        customTags = ToolsDataManager.LoadCustomTags();
     }
 
     public override void _Process(double delta)
@@ -55,6 +71,68 @@ public partial class UiController : Node
         {
             HandleDetailsTagFilterInput();
         }
+    }
+
+    public void OnDetailsTagToggled(TagButton detailsTag, bool tagged)
+    {
+        if (selectedWallpaper is null)
+        {
+            return;
+        }
+        SetItemTag(selectedWallpaper, detailsTag.Name, tagged);
+    }
+
+    public void OnAddTagPressed()
+    {
+        if (TagSearchBox.Text.Length > 0)
+        {
+            string formatted = TagSearchBox.Text;
+            if (TagSearchBox.Text.ToLower() == TagSearchBox.Text)
+            {
+                formatted = TagSearchBox.Text[..1].ToUpper() + TagSearchBox.Text[1..];
+            }
+            var node = AddCustomTag(formatted, GetSchemeColor(selectedWallpaper));
+            SetItemTag(selectedWallpaper, formatted, true);
+            filteredTags.Add(node);
+        }
+    }
+
+    private TagButton AddCustomTag(string tag, Color? colour = null)
+    {
+        var tagColour = colour ?? new Color(1, 1, 1);
+        customTags.Add(tag, tagColour);
+        ToolsDataManager.SaveCustomTags(customTags);
+        return AddTagNodeToDetailsPane(tag, colour: tagColour);
+    }
+
+    private void RemoveCustomTag(string tag)
+    {
+        customTags.Remove(tag);
+        ToolsDataManager.SaveCustomTags(customTags);
+        foreach (Node node in WallpaperContainer.GetChildren())
+        {
+            if (node is WallpaperPreview preview)
+            {
+                SetItemTag(preview.Info, tag, false);
+                ToolsDataManager.SaveCustomData(preview.Info.Identifier, GetCustomWallpaperData(preview.Info));
+            }
+        }
+        RemoveTagFromDetailsPane(tag);
+    }
+
+    private Dictionary GetCustomWallpaperData(WallpaperInfo info)
+    {
+        Dictionary data = [];
+        Array<string> tags = [];
+        foreach (var tag in info.Tags)
+        {
+            if (customTags.ContainsKey(tag))
+            {
+                tags.Add(tag);
+            }
+        }
+        data.Add("tags", tags);
+        return data;
     }
 
     private void HandleDetailsTagFilterInput()
@@ -92,6 +170,9 @@ public partial class UiController : Node
         {
             item.Tags.Remove(tag);
         }
+
+        ToolsDataManager.SaveCustomData(item.Identifier, GetCustomWallpaperData(item));
+
         if (selectedWallpaper == item)
         {
             SetDetailsTagsState([tag], tagged);
@@ -102,35 +183,93 @@ public partial class UiController : Node
     {
         fakeFocussedNode?.RemoveThemeStyleboxOverride("disabled");
         fakeFocussedNode = node;
-        fakeFocussedNode.AddThemeStyleboxOverride("normal", MainTheme.GetStylebox("CheckBox", "focus"));
-        fakeFocussedNode.AddThemeStyleboxOverride("disabled", MainTheme.GetStylebox("CheckBox", "focus"));
+        var focusBox = MainTheme.GetStylebox("CheckBox", "focus");
+        fakeFocussedNode.AddThemeStyleboxOverride("normal", focusBox);
+        fakeFocussedNode.AddThemeStyleboxOverride("disabled", focusBox);
+        fakeFocussedNode.AddThemeStyleboxOverride("pressed", focusBox);
     }
 
     private void LoadBuiltinTags(Dictionary prefs)
     {
-        string[] path = ["general", "browser", "filterinfo", "installed", "tags"];
-        var current = prefs;
-        foreach (var part in path) { 
-            if (!current.ContainsKey(part))
-            {
-                GD.PrintErr($"Failed to get tags: key '{part}' not found");
-                return;
-            }
-            current = current[part].AsGodotDictionary();
-        };
+        try
+        {
+            var current = LoadFromUntrustworthyDict(prefs, ["general", "browser", "filterinfo", "installed", "tags"]);
 
-        foreach (var tag in current.Keys) { 
-            builtinTags.Add(tag.AsString());
+            foreach (var tag in current.AsGodotDictionary().Keys)
+            {
+                builtinTags.Add(tag.AsString(), new Color(1,1,1));
+            }
+        }
+        catch (KeyNotFoundException e)
+        {
+            GD.PrintErr($"Failed to get tags: {e.Message}");
+            return;
+        }
+    }
+    
+    private Color? GetSchemeColor(WallpaperInfo wallpaper)
+    {
+        try
+        {
+            var colour = LoadFromUntrustworthyDict(wallpaper.WEData, ["general", "properties", "schemecolor", "value"]);
+            // Colour is in string "float float float" form. (or doubles perhaps)
+            var floatStrings = colour.AsString().Split(' ');
+            if (floatStrings.Length != 3)
+            {
+                return null;
+            }
+            float[] parsed = new float[floatStrings.Length];
+            for (int i = 0; i < 3; i++)
+            {
+                parsed[i] = float.Parse(floatStrings[i], CultureInfo.InvariantCulture.NumberFormat);
+            }
+            return new Color(parsed[0], parsed[1], parsed[2]);
+        }
+        catch (KeyNotFoundException)
+        {
+            return null;
+        }
+        catch (FormatException e)
+        {
+            GD.PrintErr($"Failed to parse float: {e.Message}");
+            return null;
         }
     }
 
-    private void AddTagNodeToDetailsPane(string tag, bool disabled=false)
+    private Variant LoadFromUntrustworthyDict(Dictionary dictionary, string[] path)
+    {
+        Variant current = dictionary;
+        foreach (var part in path)
+        {
+            if (!current.AsGodotDictionary().ContainsKey(part))
+            {
+                throw new KeyNotFoundException($"key '{part}' not found");
+            }
+            current = current.AsGodotDictionary()[part];
+        };
+        return current;
+    }
+
+    private TagButton AddTagNodeToDetailsPane(string tag, bool disabled=false, Color? colour = null)
     {
         TagButton node = TagOptionScene.Instantiate<TagButton>();
         node.CheckBox.Text = tag;
         node.CheckBox.Disabled = disabled;
         node.Name = tag;
+        if (colour is Color notNull)
+        {
+            node.ColorPicker.Color = notNull;
+            node.Icon.SelfModulate = notNull;
+        }
+        node.CheckBox.Toggled += (toggledOn) => OnDetailsTagToggled(node, toggledOn);
         TagContainer.AddChild(node);
+        return node;
+    }
+
+    private void RemoveTagFromDetailsPane(string tag)
+    {
+        TagButton node = TagContainer.GetNode<TagButton>(tag);
+        node.QueueFree();
     }
 
     private string GetCurrentUser()
@@ -147,7 +286,7 @@ public partial class UiController : Node
         }
     }
 
-    private Dictionary LoadPrefs()
+    private Dictionary LoadWEPrefs()
     {
         var file = FileAccess.Open(WEPrefsPath, FileAccess.ModeFlags.Read);
         if (file is null)
@@ -204,7 +343,7 @@ public partial class UiController : Node
                 GD.PrintErr($"Failed to get node for tag {tag}");
                 continue;
             }
-            node.CheckBox.ButtonPressed = pressed;
+            node.CheckBox.SetPressedNoSignal(pressed);
         }
     }
 
@@ -272,6 +411,7 @@ public partial class UiController : Node
         }
         return null;
     }
+    
     private TagButton GetPreviousVisibleTag(int from, Container tagContainer)
     {
         for (int i = from - 1; i >= 0; i--)

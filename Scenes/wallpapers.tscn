@@ -175,7 +175,7 @@ script = ExtResource("1_1h7kx")
 WallpaperPreviewContainer = NodePath("../Body/VBoxContainer/Browser/ScrollContainer/VBoxContainer/Wallpapers")
 WallpaperPreviewScene = ExtResource("2_5v4cw")
 
-[node name="UIController" type="Node" parent="." unique_id=464476138 node_paths=PackedStringArray("TagContainer", "TagSearchBox", "DetailsTitle", "DetailsPreview")]
+[node name="UIController" type="Node" parent="." unique_id=464476138 node_paths=PackedStringArray("TagContainer", "TagSearchBox", "DetailsTitle", "DetailsPreview", "WallpaperContainer")]
 script = ExtResource("8_epkga")
 TagOptionScene = ExtResource("2_g8jsr")
 TagContainer = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/ScrollContainer/ScrollSpacerContainer/TagButtonContainer")
@@ -183,6 +183,8 @@ TagSearchBox = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContai
 DetailsTitle = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/Label")
 DetailsPreview = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/TextureRect")
 MainTheme = ExtResource("1_tmsnl")
+WallpaperContainer = NodePath("../Body/VBoxContainer/Browser/ScrollContainer/VBoxContainer/Wallpapers")
 
 [connection signal="text_changed" from="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/TagSearch" to="UIController" method="OnTagSearchTextChanged"]
+[connection signal="pressed" from="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/AddTagButton" to="UIController" method="OnAddTagPressed"]
 [connection signal="WallpaperLoaded" from="WELoader" to="UIController" method="OnWallpaperLoaded"]

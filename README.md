@@ -3,15 +3,17 @@
 Provides some simple tools for managing wallpaper engine wallpapers until better support is added natively.
 
 # Features
-- None yet
+- Custom tags
 
 # To do:
 - Load local wallpapers
-- Custom tags
-- Internal persistent storage
+- Coloured tags
+- Auto colour tags
+- Visual display of tags per item
+- Multi-select
+- Tag painter
 - Generate playlists based on tags
 - Filter by tag
-- Add custom tags
 - Some more docs
 - Steam API for proper titles: https://partner.steamgames.com/doc/sdk/api
 

@@ -54,12 +54,20 @@ public partial class WELoader : Node
                 GD.PrintErr($"Invalid project file at {relativeProjectPath}");
                 continue;
             }
+            LoadCustomData(info);
+
             WallpaperPreview preview = WallpaperPreviewScene.Instantiate<WallpaperPreview>();
             preview.Info = info;
             LoadPreviewImage(preview, dir.GetCurrentDir() + "\\" + folderName);
             WallpaperPreviewContainer.AddChild(preview);
             EmitSignal(SignalName.WallpaperLoaded, preview);
         }
+    }
+
+    private void LoadCustomData(WallpaperInfo info) 
+    {
+        var data = ToolsDataManager.LoadCustomData(info.Identifier);
+        info.AddCustomData(data);
     }
 
     private void LoadPreviewImage(WallpaperPreview preview, string absoluteDir)
