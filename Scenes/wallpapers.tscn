@@ -127,11 +127,16 @@ autowrap_mode = 3
 text_overrun_behavior = 4
 max_lines_visible = 2
 
-[node name="LineEdit" type="LineEdit" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer" unique_id=531387944]
+[node name="TagSearch" type="LineEdit" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer" unique_id=531387944]
 layout_mode = 2
+focus_next = NodePath(".")
+focus_previous = NodePath(".")
 placeholder_text = "Add tag..."
+emoji_menu_enabled = false
 
-[node name="PopupMenu" type="PopupMenu" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/LineEdit" unique_id=1306842891]
+[node name="AddTagButton" type="Button" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer" unique_id=1661119720]
+layout_mode = 2
+text = "Add"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer" unique_id=945438554]
 layout_mode = 2
@@ -170,13 +175,14 @@ script = ExtResource("1_1h7kx")
 WallpaperPreviewContainer = NodePath("../Body/VBoxContainer/Browser/ScrollContainer/VBoxContainer/Wallpapers")
 WallpaperPreviewScene = ExtResource("2_5v4cw")
 
-[node name="UIController" type="Node" parent="." unique_id=464476138 node_paths=PackedStringArray("TagContainer", "TagSearchBox", "TagSearchPopup", "DetailsTitle", "DetailsPreview")]
+[node name="UIController" type="Node" parent="." unique_id=464476138 node_paths=PackedStringArray("TagContainer", "TagSearchBox", "DetailsTitle", "DetailsPreview")]
 script = ExtResource("8_epkga")
 TagOptionScene = ExtResource("2_g8jsr")
 TagContainer = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/ScrollContainer/ScrollSpacerContainer/TagButtonContainer")
-TagSearchBox = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/LineEdit")
-TagSearchPopup = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/LineEdit/PopupMenu")
+TagSearchBox = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/TagSearch")
 DetailsTitle = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/Label")
 DetailsPreview = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/TextureRect")
+MainTheme = ExtResource("1_tmsnl")
 
+[connection signal="text_changed" from="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/TagSearch" to="UIController" method="OnTagSearchTextChanged"]
 [connection signal="WallpaperLoaded" from="WELoader" to="UIController" method="OnWallpaperLoaded"]

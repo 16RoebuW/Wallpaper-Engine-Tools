@@ -16,14 +16,19 @@ public partial class UiController : Node
     [Export]
     LineEdit TagSearchBox;
     [Export]
-    PopupMenu TagSearchPopup;
-    [Export]
     Label DetailsTitle;
     [Export]
     TextureRect DetailsPreview;
+    [Export]
+    Theme MainTheme;
 
     private HashSet<string> builtinTags = [];
-    private WallpaperInfo lastWallpaper;
+    private WallpaperInfo selectedWallpaper;
+
+    private HashSet<TagButton> filteredTags = [];
+    private string oldText = "longer_than_blank";
+
+    private Button fakeFocussedNode;
 
     public override void _Ready()
     {
@@ -40,6 +45,65 @@ public partial class UiController : Node
         {
             AddTagNodeToDetailsPane(tag, true);
         }
+
+        TagSearchBox.Editable = false;
+    }
+
+    public override void _Process(double delta)
+    {
+        if (TagSearchBox.HasFocus() && fakeFocussedNode is not null)
+        {
+            HandleDetailsTagFilterInput();
+        }
+    }
+
+    private void HandleDetailsTagFilterInput()
+    {
+        // Order matters here because shift+tab (focus prev) means that tab is pressed as well (focus next)
+        if (Input.IsActionJustPressed("ui_up") || Input.IsActionJustPressed("ui_focus_prev"))
+        {
+            var prev = GetPreviousVisibleTag(fakeFocussedNode.GetParent().GetIndex(), TagContainer);
+            if (prev is not null)
+            {
+                FakeFocus(prev.CheckBox);
+            }
+        }
+        else if (Input.IsActionJustPressed("ui_down") || Input.IsActionJustPressed("ui_focus_next")) 
+        {
+            var next = GetNextVisibleTag(fakeFocussedNode.GetParent().GetIndex(), TagContainer);
+            if (next is not null)
+            {
+                FakeFocus(next.CheckBox);
+            }
+        }
+        else if (Input.IsActionJustPressed("ui_accept") && fakeFocussedNode.Disabled == false)
+        {
+            SetItemTag(selectedWallpaper, fakeFocussedNode.GetParent().Name, !fakeFocussedNode.ButtonPressed);
+        }
+    }
+
+    private void SetItemTag(WallpaperInfo item, string tag, bool tagged)
+    {
+        if (tagged)
+        {
+            item.Tags.Add(tag);
+        } 
+        else
+        {
+            item.Tags.Remove(tag);
+        }
+        if (selectedWallpaper == item)
+        {
+            SetDetailsTagsState([tag], tagged);
+        }
+    }
+
+    private void FakeFocus(Button node)
+    {
+        fakeFocussedNode?.RemoveThemeStyleboxOverride("disabled");
+        fakeFocussedNode = node;
+        fakeFocussedNode.AddThemeStyleboxOverride("normal", MainTheme.GetStylebox("CheckBox", "focus"));
+        fakeFocussedNode.AddThemeStyleboxOverride("disabled", MainTheme.GetStylebox("CheckBox", "focus"));
     }
 
     private void LoadBuiltinTags(Dictionary prefs)
@@ -117,15 +181,17 @@ public partial class UiController : Node
 
     private void OnWallpaperSelected(WallpaperPreview wallpaper)
     {
-        if (lastWallpaper is not null)
+        TagSearchBox.Editable = true;
+
+        if (selectedWallpaper is not null)
         {
-            SetDetailsTagsState(lastWallpaper.Tags, false);
+            SetDetailsTagsState(selectedWallpaper.Tags, false);
         }
+        selectedWallpaper = wallpaper.Info;
 
         DetailsTitle.Text = wallpaper.Info.Title;
         DetailsPreview.Texture = wallpaper.PreviewImage;
         SetDetailsTagsState(wallpaper.Info.Tags, true);
-        lastWallpaper = wallpaper.Info;
     }
 
     private void SetDetailsTagsState(HashSet<string> tags, bool pressed)
@@ -140,5 +206,91 @@ public partial class UiController : Node
             }
             node.CheckBox.ButtonPressed = pressed;
         }
+    }
+
+    public void OnTagSearchTextChanged(string newText)
+    {
+        if (newText.Length < oldText.Length)
+        {
+            filteredTags.Clear();
+            foreach (Node node in TagContainer.GetChildren())
+            {
+                if (node is TagButton tag)
+                {
+                    if (tag.Name.ToString().Contains(newText, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        filteredTags.Add(tag);
+                        tag.Visible = true;
+                    }
+                    else
+                    {
+                        tag.Visible = false;
+                    }
+                }
+            }
+        }
+        else
+        {
+            foreach (TagButton tag in filteredTags)
+            {
+                if (tag.Name.ToString().Contains(newText, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    continue;
+                }
+                filteredTags.Remove(tag);
+                tag.Visible = false;
+            }
+        }
+
+        var topTag = GetNextVisibleTag(-1, TagContainer);
+        if (topTag is not null)
+        {
+            FakeFocus(topTag.CheckBox);
+        }
+
+        oldText = newText;
+    }
+
+    private TagButton GetNextVisibleTag(int from, Container tagContainer)
+    {
+        for (int i = from + 1; i < tagContainer.GetChildCount(); i++)
+        {
+            var tag = tagContainer.GetChild<TagButton>(i);
+            if (tag.Visible == true)
+            {
+                return tag;
+            }
+        }
+        // Loop round
+        for (int i = 0; i <= from; i++)
+        {
+            var tag = tagContainer.GetChild<TagButton>(i);
+            if (tag.Visible == true)
+            {
+                return tag;
+            }
+        }
+        return null;
+    }
+    private TagButton GetPreviousVisibleTag(int from, Container tagContainer)
+    {
+        for (int i = from - 1; i >= 0; i--)
+        {
+            var tag = tagContainer.GetChild<TagButton>(i);
+            if (tag.Visible == true)
+            {
+                return tag;
+            }
+        }
+        // Loop round
+        for (int i = GetChildCount() - 1; i >= from; i--)
+        {
+            var tag = tagContainer.GetChild<TagButton>(i);
+            if (tag.Visible == true)
+            {
+                return tag;
+            }
+        }
+        return null;
     }
 }
