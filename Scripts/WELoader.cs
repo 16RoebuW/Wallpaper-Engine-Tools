@@ -58,7 +58,13 @@ public partial class WELoader : Node
 
             WallpaperPreview preview = WallpaperPreviewScene.Instantiate<WallpaperPreview>();
             preview.Info = info;
-            LoadPreviewImage(preview, dir.GetCurrentDir() + "\\" + folderName);
+            Globals.LoadedWallpapers.Add(info);
+            var texture = LoadPreviewImage(preview, dir.GetCurrentDir() + "\\" + folderName);
+            if (texture is not null)
+            {
+                Globals.LoadedWallpaperTextures[info.Title] = texture;
+                preview.PreviewImage = texture;
+            }
             WallpaperPreviewContainer.AddChild(preview);
             EmitSignal(SignalName.WallpaperLoaded, preview);
         }
@@ -70,12 +76,12 @@ public partial class WELoader : Node
         info.AddCustomData(data);
     }
 
-    private void LoadPreviewImage(WallpaperPreview preview, string absoluteDir)
+    private Texture2D LoadPreviewImage(WallpaperPreview preview, string absoluteDir)
     {
         var previewPath = preview.Info.PreviewPath;
         if (previewPath == null)
         {
-            return;
+            return null;
         }
 
         var path = absoluteDir + "\\" + previewPath;
@@ -87,7 +93,7 @@ public partial class WELoader : Node
             if (FileAccess.GetOpenError() != Error.Ok)
             {
                 GD.PrintErr($"Failed to load image file data ({path}): " + FileAccess.GetOpenError());
-                return;
+                return null;
             }
             texture = AnimatedTextureFromBuffer(data);
         } 
@@ -97,17 +103,17 @@ public partial class WELoader : Node
             if (image is null)
             {
                 GD.PrintErr($"Failed to load image {path}");
-                return;
+                return null;
             }
             texture = ImageTexture.CreateFromImage(image);
         }
         if (texture is null)
         {
             GD.PrintErr("Failed to load image: " + path);
-            return;
+            return null;
         }
-        preview.PreviewImage = texture;
         GD.Print($"Successfully loaded '{preview.Info.Title}'");
+        return texture;
     }
 
     private AnimatedTexture AnimatedTextureFromFile(string path, int maxFrames = 0)

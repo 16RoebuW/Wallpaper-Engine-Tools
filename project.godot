@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 GifManagerWrapper="*uid://bhs8fq5adpglc"
 ToolsDataManager="*uid://bl1whs6a77174"
+Globals="*uid://bccp4rr2tuam1"
 
 [display]
 

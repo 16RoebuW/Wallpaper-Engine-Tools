@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://bs00s6a771c0x"]
+
+[node name="LinkButton" type="LinkButton" unique_id=1126672658]
+size_flags_horizontal = 4
+text = "All"

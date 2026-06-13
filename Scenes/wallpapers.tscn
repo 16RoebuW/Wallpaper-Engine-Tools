@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://d3gxrhcawkiu4" path="res://Scenes/tag_button.tscn" id="2_g8jsr"]
 [ext_resource type="Theme" uid="uid://cuxc4yyeyw8ej" path="res://Themes/hero_button.tres" id="5_ucp0k"]
 [ext_resource type="Script" uid="uid://cajodgb4wqc73" path="res://Scripts/UiController.cs" id="8_epkga"]
+[ext_resource type="PackedScene" uid="uid://ce6qf8gwbbjku" path="res://Scenes/playlist_creator.tscn" id="9_4ckoh"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_epkga"]
 content_margin_left = 2.0
@@ -184,6 +185,9 @@ DetailsTitle = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContai
 DetailsPreview = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/TextureRect")
 MainTheme = ExtResource("1_tmsnl")
 WallpaperContainer = NodePath("../Body/VBoxContainer/Browser/ScrollContainer/VBoxContainer/Wallpapers")
+
+[node name="PlaylistCreator" parent="." unique_id=66200200 instance=ExtResource("9_4ckoh")]
+layout_mode = 1
 
 [connection signal="text_changed" from="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/TagSearch" to="UIController" method="OnTagSearchTextChanged"]
 [connection signal="pressed" from="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/AddTagButton" to="UIController" method="OnAddTagPressed"]

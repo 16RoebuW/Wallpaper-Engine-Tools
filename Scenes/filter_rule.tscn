@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://mgku7pdm04se"]
+
+[ext_resource type="Script" uid="uid://bkuhnl028poap" path="res://Scripts/FilterRule.cs" id="1_4o68q"]
+[ext_resource type="PackedScene" uid="uid://cyjl1soqy0fvu" path="res://Scenes/tag_toggle.tscn" id="2_1j1nj"]
+[ext_resource type="PackedScene" uid="uid://bs00s6a771c0x" path="res://Scenes/all_button.tscn" id="3_tqf0q"]
+[ext_resource type="PackedScene" uid="uid://d80vp3co206b" path="res://Scenes/none_button.tscn" id="4_8hrqi"]
+[ext_resource type="PackedScene" uid="uid://ucoourqgage2" path="res://Scenes/remove_button.tscn" id="5_ubp83"]
+[ext_resource type="PackedScene" uid="uid://p33nhplr3dy0" path="res://Scenes/spacer_control.tscn" id="6_8qkpd"]
+
+[node name="FilterRule" type="VBoxContainer" unique_id=161695218]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+script = ExtResource("1_4o68q")
+TagToggleScene = ExtResource("2_1j1nj")
+AllButtonScene = ExtResource("3_tqf0q")
+NoneButtonScene = ExtResource("4_8hrqi")
+DeleteButtonScene = ExtResource("5_ubp83")
+ButtonSpacerScene = ExtResource("6_8qkpd")

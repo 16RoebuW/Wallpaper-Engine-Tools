@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://cyjl1soqy0fvu"]
+
+[ext_resource type="StyleBox" uid="uid://bqq2coi78t658" path="res://Themes/divider_style_box.tres" id="1_nli0c"]
+
+[node name="PanelContainer" type="PanelContainer" unique_id=218633463]
+theme_override_styles/panel = ExtResource("1_nli0c")
+
+[node name="CheckBox" type="CheckBox" parent="." unique_id=1439257054]
+layout_mode = 2
+size_flags_horizontal = 4

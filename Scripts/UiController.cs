@@ -25,8 +25,6 @@ public partial class UiController : Node
     [Export]
     Container WallpaperContainer;
 
-    private Godot.Collections.Dictionary<string, Color> builtinTags = [];
-    private Godot.Collections.Dictionary<string, Color> customTags = [];
     private WallpaperInfo selectedWallpaper;
 
     private HashSet<TagButton> filteredTags = [];
@@ -45,14 +43,14 @@ public partial class UiController : Node
 
         LoadBuiltinTags(prefs);
 
-        foreach (var kv in builtinTags)
+        foreach (var kv in Globals.GetBuiltinTags())
         {
             AddTagNodeToDetailsPane(kv.Key, true, kv.Value);
         }
 
         LoadCustomTags();
 
-        foreach (var kv in customTags)
+        foreach (var kv in Globals.GetCustomTags())
         {
             AddTagNodeToDetailsPane(kv.Key, colour: kv.Value);
         }
@@ -62,7 +60,7 @@ public partial class UiController : Node
 
     private void LoadCustomTags()
     {
-        customTags = ToolsDataManager.LoadCustomTags();
+        Globals.SetCustomTags(ToolsDataManager.LoadCustomTags());
     }
 
     public override void _Process(double delta)
@@ -100,15 +98,15 @@ public partial class UiController : Node
     private TagButton AddCustomTag(string tag, Color? colour = null)
     {
         var tagColour = colour ?? new Color(1, 1, 1);
-        customTags.Add(tag, tagColour);
-        ToolsDataManager.SaveCustomTags(customTags);
+        Globals.AddCustomTag(tag, tagColour);
+        ToolsDataManager.SaveCustomTags(Globals.GetCustomTags());
         return AddTagNodeToDetailsPane(tag, colour: tagColour);
     }
 
     private void RemoveCustomTag(string tag)
     {
-        customTags.Remove(tag);
-        ToolsDataManager.SaveCustomTags(customTags);
+        Globals.RemoveCustomTag(tag);
+        ToolsDataManager.SaveCustomTags(Globals.GetCustomTags());
         foreach (Node node in WallpaperContainer.GetChildren())
         {
             if (node is WallpaperPreview preview)
@@ -124,6 +122,7 @@ public partial class UiController : Node
     {
         Dictionary data = [];
         Array<string> tags = [];
+        var customTags = Globals.GetCustomTags();
         foreach (var tag in info.Tags)
         {
             if (customTags.ContainsKey(tag))
@@ -194,11 +193,13 @@ public partial class UiController : Node
         try
         {
             var current = LoadFromUntrustworthyDict(prefs, ["general", "browser", "filterinfo", "installed", "tags"]);
+            Godot.Collections.Dictionary<string, Color> tags = [];
 
             foreach (var tag in current.AsGodotDictionary().Keys)
             {
-                builtinTags.Add(tag.AsString(), new Color(1,1,1));
+                tags.Add(tag.AsString(), new Color(1,1,1));
             }
+            Globals.SetBuiltinTags(tags);
         }
         catch (KeyNotFoundException e)
         {
