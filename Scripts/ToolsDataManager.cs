@@ -7,6 +7,8 @@ public partial class ToolsDataManager : Node
     const string SaveDataLocation = "user://";
     const string CustomTagsName = "custom_tags.json";
     const string WallpaperDataSuffix = ".json";
+    const string BackupPrefix = "backups/";
+    const string PrefsName = "config.json";
 
     public static ToolsDataManager Instance;
 
@@ -107,11 +109,14 @@ public partial class ToolsDataManager : Node
 
     private static string FullPath(string end)
     {
-        return SaveDataLocation + "\\" + end;
+        return SaveDataLocation + end;
     }
 
-    private static bool IsValidFilename(string anyString)
+    public static bool IsValidFilename(string anyString)
     {
+        if (anyString.Length == 0) {
+            return false;
+        }
         foreach (var symbol in System.IO.Path.GetInvalidFileNameChars())
         {
             if (anyString.Contains(symbol))
@@ -120,5 +125,31 @@ public partial class ToolsDataManager : Node
             }
         }
         return true;
+    }
+
+    public static void BackupPreferences(string json)
+    {
+        string date = Time.GetDatetimeStringFromSystem().Replace(":", "");
+        var error = DirAccess.MakeDirRecursiveAbsolute(FullPath(BackupPrefix));
+        if (error != Error.Ok)
+        {
+            GD.PrintErr("Failed to create backup dir: " + error);
+            return;
+        }
+
+        var path = FullPath(BackupPrefix + date + "-" + PrefsName);
+        using var file = FileAccess.Open(path, FileAccess.ModeFlags.Write);
+        if (file is null)
+        {
+            GD.PrintErr($"Failed to open '{path}': {FileAccess.GetOpenError()}");
+            return;
+        }
+        file.StoreString(json);
+        GD.Print($"Preferences backup saved to {path}");
+    }
+
+    public static void BackupPreferences()
+    {
+        BackupPreferences(Globals.PreferencesString);
     }
 }

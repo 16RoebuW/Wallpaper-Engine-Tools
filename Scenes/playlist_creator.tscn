@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://dye5ht74fii4i" path="res://Icons/angle-down-solid.png" id="3_o6f60"]
 [ext_resource type="PackedScene" uid="uid://mgku7pdm04se" path="res://Scenes/filter_rule.tscn" id="4_u2nt2"]
 [ext_resource type="PackedScene" uid="uid://dvweo4jjt8oes" path="res://Scenes/tag_label.tscn" id="5_8dob8"]
+[ext_resource type="PackedScene" uid="uid://c0skiprnrk5he" path="res://Scenes/save_as_popup.tscn" id="8_1gwaf"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_k6p8o"]
 content_margin_left = 0.0
@@ -44,7 +45,7 @@ corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 corner_detail = 5
 
-[node name="PlaylistCreator" type="MarginContainer" unique_id=66200200 node_paths=PackedStringArray("AddRuleButton", "WallpaperCarousel", "TagsLabel", "TagNameContainer", "QueryContainer", "TabBar")]
+[node name="PlaylistCreator" type="MarginContainer" unique_id=66200200 node_paths=PackedStringArray("AddRuleButton", "WallpaperCarousel", "SaveAsPopup", "TagsLabel", "TagNameContainer", "QueryContainer", "TabBar")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -54,6 +55,7 @@ theme = ExtResource("1_qqg2e")
 script = ExtResource("2_iuu80")
 AddRuleButton = NodePath("HBoxContainer/Body/VBoxContainer/OptionButton")
 WallpaperCarousel = NodePath("HBoxContainer/Body/VBoxContainer/PreviewCarousel")
+SaveAsPopup = NodePath("SaveAsPopup")
 TagsLabel = NodePath("HBoxContainer/Body/VBoxContainer/HBoxContainer/Control")
 TagNameContainer = NodePath("HBoxContainer/Body/VBoxContainer/ScrollContainer/QueryBox/VBoxContainer")
 QueryContainer = NodePath("HBoxContainer/Body/VBoxContainer/ScrollContainer/QueryBox")
@@ -165,5 +167,9 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_iuu80")
 
+[node name="SaveAsPopup" parent="." unique_id=759784018 instance=ExtResource("8_1gwaf")]
+visible = false
+
 [connection signal="active_tab_rearranged" from="HBoxContainer/Body/VBoxContainer/HBoxContainer/TabBar" to="." method="OnActiveTabRearranged"]
 [connection signal="tab_selected" from="HBoxContainer/Body/VBoxContainer/HBoxContainer/TabBar" to="." method="OnTabSelected"]
+[connection signal="pressed" from="HBoxContainer/Body/VBoxContainer/SaveButton" to="." method="OnSaveAsPressed"]

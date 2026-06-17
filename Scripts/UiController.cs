@@ -9,8 +9,6 @@ using Dictionary = Godot.Collections.Dictionary;
 public partial class UiController : Node
 {
     [Export]
-    public string WEPrefsPath = @"C:\Program Files (x86)\Steam\steamapps\common\wallpaper_engine\config.json";
-    [Export]
     PackedScene TagOptionScene;
     [Export]
     Container TagContainer;
@@ -34,7 +32,7 @@ public partial class UiController : Node
 
     public override void _Ready()
     {
-        var prefs = LoadWEPrefs();
+        var prefs = Globals.Preferences[Globals.UserName].AsGodotDictionary();
         if (prefs is null)
         {
             GD.PrintErr("Failed to load preferences!!");
@@ -192,7 +190,7 @@ public partial class UiController : Node
     {
         try
         {
-            var current = LoadFromUntrustworthyDict(prefs, ["general", "browser", "filterinfo", "installed", "tags"]);
+            var current = Globals.LoadFromUntrustworthyDict(prefs, ["general", "browser", "filterinfo", "installed", "tags"]);
             Godot.Collections.Dictionary<string, Color> tags = [];
 
             foreach (var tag in current.AsGodotDictionary().Keys)
@@ -212,7 +210,7 @@ public partial class UiController : Node
     {
         try
         {
-            var colour = LoadFromUntrustworthyDict(wallpaper.WEData, ["general", "properties", "schemecolor", "value"]);
+            var colour = Globals.LoadFromUntrustworthyDict(wallpaper.WEData, ["general", "properties", "schemecolor", "value"]);
             // Colour is in string "float float float" form. (or doubles perhaps)
             var floatStrings = colour.AsString().Split(' ');
             if (floatStrings.Length != 3)
@@ -237,20 +235,6 @@ public partial class UiController : Node
         }
     }
 
-    private Variant LoadFromUntrustworthyDict(Dictionary dictionary, string[] path)
-    {
-        Variant current = dictionary;
-        foreach (var part in path)
-        {
-            if (!current.AsGodotDictionary().ContainsKey(part))
-            {
-                throw new KeyNotFoundException($"key '{part}' not found");
-            }
-            current = current.AsGodotDictionary()[part];
-        };
-        return current;
-    }
-
     private TagButton AddTagNodeToDetailsPane(string tag, bool disabled=false, Color? colour = null)
     {
         TagButton node = TagOptionScene.Instantiate<TagButton>();
@@ -271,47 +255,6 @@ public partial class UiController : Node
     {
         TagButton node = TagContainer.GetNode<TagButton>(tag);
         node.QueueFree();
-    }
-
-    private string GetCurrentUser()
-    {
-        if (OS.HasFeature("windows"))
-        {
-            string path = OS.GetEnvironment("USERPROFILE");
-            return path[(path.LastIndexOf('\\') + 1)..];
-        }
-        else
-        {
-            string path = OS.GetEnvironment("HOME");
-            return path[(path.LastIndexOf('/') + 1)..];
-        }
-    }
-
-    private Dictionary LoadWEPrefs()
-    {
-        var file = FileAccess.Open(WEPrefsPath, FileAccess.ModeFlags.Read);
-        if (file is null)
-        {
-            GD.PrintErr($"Failed to open config file at {WEPrefsPath}, reason: " + FileAccess.GetOpenError());
-            return null; ;
-        }
-        var prefs = file.GetAsText();
-        file.Close();
-        var parser = new Json();
-        var err = parser.Parse(prefs);
-        if (err != Error.Ok)
-        {
-            GD.PrintErr(parser.GetErrorMessage());
-            return null;
-        }
-        var dict = parser.Data.AsGodotDictionary();
-        var user = GetCurrentUser();
-        if (!dict.ContainsKey(user))
-        {
-            GD.PrintErr($"User '{user}' not found in Wallpaper Engine preferences! Top level keys: {String.Join(",", dict.Keys)}");
-            return null;
-        }
-        return dict[user].AsGodotDictionary();
     }
 
     public void OnWallpaperLoaded(WallpaperPreview wallpaper)

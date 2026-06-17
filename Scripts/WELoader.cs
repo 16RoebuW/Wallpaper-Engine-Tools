@@ -1,4 +1,5 @@
 using Godot;
+using Godot.Collections;
 using Godot.NativeInterop;
 using System;
 
@@ -7,6 +8,8 @@ public partial class WELoader : Node
     [Export]
     public string WEWorkshopPath = @"C:\Program Files (x86)\Steam\steamapps\workshop\content\431960";
     [Export]
+    public string WEPrefsPath = @"C:\Program Files (x86)\Steam\steamapps\common\wallpaper_engine\config.json";
+    [Export]
     Container WallpaperPreviewContainer;
     [Export]
     PackedScene WallpaperPreviewScene;
@@ -14,11 +17,20 @@ public partial class WELoader : Node
     [Signal]
     public delegate void WallpaperLoadedEventHandler(WallpaperPreview wallpaper);
 
+    private static WELoader _instance;
+
     const string ProjectName = @"\project.json";
 
     public override void _Ready()
     {
+        Globals.Preferences = LoadWEPrefs();
         LoadWorkshopItems();
+        _instance = this;
+    }
+
+    public static string GetPrefsPath()
+    {
+        return _instance.WEPrefsPath;
     }
 
     public void LoadWorkshopItems()
@@ -40,7 +52,7 @@ public partial class WELoader : Node
                 GD.Print("No project file in " + folderName);
                 continue;
             }
-            var file = FileAccess.Open(dir.GetCurrentDir() + "\\" + relativeProjectPath, FileAccess.ModeFlags.Read);
+            var file = FileAccess.Open(dir.GetCurrentDir() + "/" + relativeProjectPath, FileAccess.ModeFlags.Read);
             if (file is null)
             {
                 GD.PrintErr($"Failed to open project file at {relativeProjectPath}, reason: " + FileAccess.GetOpenError());
@@ -48,7 +60,7 @@ public partial class WELoader : Node
             }
             var project = file.GetAsText();
             file.Close();
-            var info = WallpaperInfo.From(project, folderName);
+            var info = WallpaperInfo.From(project, dir.GetCurrentDir() + "/" + folderName);
             if (info is null)
             {
                 GD.PrintErr($"Invalid project file at {relativeProjectPath}");
@@ -59,7 +71,7 @@ public partial class WELoader : Node
             WallpaperPreview preview = WallpaperPreviewScene.Instantiate<WallpaperPreview>();
             preview.Info = info;
             Globals.LoadedWallpapers.Add(info);
-            var texture = LoadPreviewImage(preview, dir.GetCurrentDir() + "\\" + folderName);
+            var texture = LoadPreviewImage(preview, dir.GetCurrentDir() + "/" + folderName);
             if (texture is not null)
             {
                 Globals.LoadedWallpaperTextures[info.Title] = texture;
@@ -114,6 +126,49 @@ public partial class WELoader : Node
         }
         GD.Print($"Successfully loaded '{preview.Info.Title}'");
         return texture;
+    }
+    
+    private string GetCurrentUser()
+    {
+        if (OS.HasFeature("windows"))
+        {
+            string path = OS.GetEnvironment("USERPROFILE");
+            return path[(path.LastIndexOf('\\') + 1)..];
+        }
+        else
+        {
+            string path = OS.GetEnvironment("HOME");
+            return path[(path.LastIndexOf('/') + 1)..];
+        }
+    }
+
+    private Dictionary LoadWEPrefs()
+    {
+        var file = FileAccess.Open(WEPrefsPath, FileAccess.ModeFlags.Read);
+        if (file is null)
+        {
+            GD.PrintErr($"Failed to open config file at {WEPrefsPath}, reason: " + FileAccess.GetOpenError());
+            return null; ;
+        }
+        var prefs = file.GetAsText();
+        file.Close();
+        Globals.PreferencesString = prefs;
+        var parser = new Json();
+        var err = parser.Parse(prefs);
+        if (err != Error.Ok)
+        {
+            GD.PrintErr(parser.GetErrorMessage());
+            return null;
+        }
+        var dict = parser.Data.AsGodotDictionary();
+        var user = GetCurrentUser();
+        if (!dict.ContainsKey(user))
+        {
+            GD.PrintErr($"User '{user}' not found in Wallpaper Engine preferences! Top level keys: {String.Join(",", dict.Keys)}");
+            return null;
+        }
+        Globals.UserName = user;
+        return dict;
     }
 
     private AnimatedTexture AnimatedTextureFromFile(string path, int maxFrames = 0)

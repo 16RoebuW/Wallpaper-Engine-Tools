@@ -9,6 +9,9 @@ public partial class Globals : Node
     private Godot.Collections.Dictionary<string, Color> customTags = [];
     public static List<WallpaperInfo> LoadedWallpapers = [];
     public static Godot.Collections.Dictionary<string, Texture2D> LoadedWallpaperTextures = [];
+    public static Dictionary Preferences;
+    public static string PreferencesString;
+    public static string UserName;
 
     private static Globals instance;
 
@@ -54,5 +57,19 @@ public partial class Globals : Node
     public static Godot.Collections.Dictionary<string, Color> GetBuiltinTags()
     {
         return instance.builtinTags;
+    }
+
+    public static Variant LoadFromUntrustworthyDict(Dictionary dictionary, string[] path)
+    {
+        Variant current = dictionary;
+        foreach (var part in path)
+        {
+            if (!current.AsGodotDictionary().ContainsKey(part))
+            {
+                throw new KeyNotFoundException($"key '{part}' not found");
+            }
+            current = current.AsGodotDictionary()[part];
+        };
+        return current;
     }
 }

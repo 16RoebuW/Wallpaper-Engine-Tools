@@ -7,9 +7,23 @@ using System.Linq;
 public partial class PlaylistCreator : Node
 {
     [Export]
+    Dictionary DefaultPlaylistSettings = new()
+    {
+        {"delay", 60 },
+        {"mode", "timer" },
+        {"order", "random" },
+        {"transition", "0" },
+        {"transitiontime", 1500 },
+        {"updateonpause", false },
+        {"videosequence", false }
+    };
+
+    [Export]
     MenuButton AddRuleButton;
     [Export]
     HBoxContainer WallpaperCarousel;
+    [Export]
+    SaveAsPopup SaveAsPopup;
 
     [Export]
     Label TagsLabel;
@@ -41,7 +55,8 @@ public partial class PlaylistCreator : Node
             var label = node.GetNode<Label>("Label");
             label.Text = kv.Key;
             node.SelfModulate = kv.Value;
-            if (kv.Value.V > 0.8)
+            var brightness = 0.2126 * kv.Value.R + 0.7152 * kv.Value.G + 0.0722 * kv.Value.B;
+            if (brightness > 0.5)
             {
                 label.AddThemeColorOverride("font_color", new Color(0,0,0));
             }
@@ -53,6 +68,73 @@ public partial class PlaylistCreator : Node
             TagsLabel.CustomMinimumSize = new Vector2(TagNameContainer.Size.X, 0);
         };
         queryBoxOffset = QueryContainer.GetChildCount();
+        SaveAsPopup.SaveButton.Pressed += OnSaveAsPopupPressed;
+    }
+
+    private void OnSaveAsPressed()
+    {
+        SaveAsPopup.Popup();
+    }
+
+    private void OnSaveAsPopupPressed()
+    {
+        string name = SaveAsPopup.LineEdit.Text;
+        if (!ToolsDataManager.IsValidFilename(name))
+        {
+            GD.PrintErr("Invalid playlist name provided");
+            return;
+        }
+
+        List<(RuleSymbol, HashSet<string>)> filterList = CollectFilter();
+
+        try
+        {
+            var operations = ParseFilter(filterList);
+            var wallpapers = FilterWallpapers(operations);
+            if (wallpapers.Count == 0)
+            {
+                throw new Exception("Playlist was empty");
+            }
+            var playlist = GetPlaylistDict(name, wallpapers);
+            ToolsDataManager.BackupPreferences();
+            Godot.Collections.Array prefsPlaylists = Globals.LoadFromUntrustworthyDict(Globals.Preferences, [Globals.UserName, "general", "playlists"]).AsGodotArray();
+            prefsPlaylists.Add(playlist);
+            var json = Json.Stringify(Globals.Preferences, indent: "\t");
+            using var file = FileAccess.Open(WELoader.GetPrefsPath(), FileAccess.ModeFlags.Write);
+            file.StoreString(json);
+            GD.Print("Saved to user config");
+            SaveAsPopup.Hide();
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr(ex.Message);
+            return;
+        }
+    }
+
+    public Dictionary GetPlaylistDict(string name, List<WallpaperInfo> wallpapers)
+    {
+        Array<string> files = [];
+        foreach (var wallpaper in wallpapers)
+        {
+            string playlistFile;
+            if (wallpaper.WEData["type"].ToString() == "scene")
+            {
+                playlistFile = "scene.pkg"; // Strange edge case
+            } 
+            else
+            {
+                playlistFile = wallpaper.WEData["file"].ToString();
+            }
+            string fileName = wallpaper.FullPath + "/" + playlistFile;
+            files.Add(fileName);
+        }
+        return new Dictionary()
+        {
+            {"items", files},
+            {"name", name},
+            {"settings", DefaultPlaylistSettings }
+        };
     }
 
     private List<WallpaperInfo> FilterWallpapers(List<Func<Stack<bool>, HashSet<string>, bool>> operations, int max = 0)
@@ -115,21 +197,7 @@ public partial class PlaylistCreator : Node
 
     private void RefreshPreview()
     {
-        List<(RuleSymbol, HashSet<string>)> filterList = [];
-        for (int i = queryBoxOffset; i < QueryContainer.GetChildCount(); i++)
-        {
-            FilterRule rule = QueryContainer.GetChild<FilterRule>(i);
-            HashSet<string> tags = [];
-            if (rule.Rule == RuleSymbol.Any || rule.Rule == RuleSymbol.All)
-            {
-                var tagIndices = rule.GetCheckedTagIndices();
-                foreach (var tagIndex in tagIndices)
-                {
-                    tags.Add(tagsList[tagIndex].tag);
-                }
-            }
-            filterList.Add((rule.Rule, tags));
-        }
+        List<(RuleSymbol, HashSet<string>)> filterList = CollectFilter();
 
         try
         {
@@ -152,6 +220,27 @@ public partial class PlaylistCreator : Node
         {
             GD.Print(ex.Message);
         }
+    }
+
+    private List<(RuleSymbol, HashSet<string>)> CollectFilter()
+    {
+        List<(RuleSymbol, HashSet<string>)> filterList = [];
+        for (int i = queryBoxOffset; i < QueryContainer.GetChildCount(); i++)
+        {
+            FilterRule rule = QueryContainer.GetChild<FilterRule>(i);
+            HashSet<string> tags = [];
+            if (rule.Rule == RuleSymbol.Any || rule.Rule == RuleSymbol.All)
+            {
+                var tagIndices = rule.GetCheckedTagIndices();
+                foreach (var tagIndex in tagIndices)
+                {
+                    tags.Add(tagsList[tagIndex].tag);
+                }
+            }
+            filterList.Add((rule.Rule, tags));
+        }
+
+        return filterList;
     }
 
     public enum RuleSymbol

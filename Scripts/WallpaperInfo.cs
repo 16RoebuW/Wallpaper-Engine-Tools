@@ -1,6 +1,7 @@
 using Godot;
 using Godot.Collections;
 using System;
+using System.Linq;
 
 public partial class WallpaperInfo
 {
@@ -8,11 +9,12 @@ public partial class WallpaperInfo
     public string Identifier { get; }
     public string Title { get; }
     public string PreviewPath { get; } = null;
+    public string FullPath { get; } = null;
     public System.Collections.Generic.HashSet<string> Tags { get; } = [];
 
     private Dictionary CustomData = [];
 
-    public static WallpaperInfo From(string json, string folderName)
+    public static WallpaperInfo From(string json, string fullPath)
     {
         var parser = new Json();
         var err = parser.Parse(json);
@@ -36,7 +38,7 @@ public partial class WallpaperInfo
             preview = dict["preview"].AsString();
         }
 
-        return new WallpaperInfo(dict, folderName, title, preview);
+        return new WallpaperInfo(dict, fullPath.Split("/").Last(), title, fullPath, preview);
     }
 
     public void AddCustomData(Dictionary data)
@@ -58,11 +60,12 @@ public partial class WallpaperInfo
         }
     }
 
-    private WallpaperInfo(Dictionary data, string id, string title, string previewPath)
+    private WallpaperInfo(Dictionary data, string id, string title, string fullPath, string previewPath)
     {
         WEData = data;
         Identifier = id;
         Title = title;
+        FullPath = fullPath;
         PreviewPath = previewPath;
 
         LoadTags(WEData);
