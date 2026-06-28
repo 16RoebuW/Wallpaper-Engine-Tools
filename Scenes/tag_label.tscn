@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dvweo4jjt8oes"]
 
-[ext_resource type="StyleBox" uid="uid://bqq2coi78t658" path="res://Themes/divider_style_box.tres" id="1_o5n4d"]
+[ext_resource type="StyleBox" uid="uid://bqq2coi78t658" path="res://Resources/divider_style_box.tres" id="1_o5n4d"]
 
 [node name="PanelContainer" type="PanelContainer" unique_id=858534455]
 custom_minimum_size = Vector2(0, 24)

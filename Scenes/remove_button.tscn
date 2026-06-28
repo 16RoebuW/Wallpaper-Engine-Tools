@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://ucoourqgage2"]
 
-[ext_resource type="Theme" uid="uid://btch3e1y0e4yo" path="res://Themes/delete_button.tres" id="1_7io2q"]
+[ext_resource type="Theme" uid="uid://btch3e1y0e4yo" path="res://Resources/delete_button.tres" id="1_7io2q"]
 
 [node name="LinkButton3" type="Button" unique_id=1993615672]
 theme = ExtResource("1_7io2q")

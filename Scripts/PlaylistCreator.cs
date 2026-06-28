@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public partial class PlaylistCreator : Node
+public partial class PlaylistCreator : Control
 {
     [Export]
     Dictionary DefaultPlaylistSettings = new()
@@ -71,6 +71,11 @@ public partial class PlaylistCreator : Node
         SaveAsPopup.SaveButton.Pressed += OnSaveAsPopupPressed;
     }
 
+    private void OnBackPressed()
+    {
+        Hide();
+    }
+
     private void OnSaveAsPressed()
     {
         SaveAsPopup.Popup();
@@ -118,9 +123,9 @@ public partial class PlaylistCreator : Node
         foreach (var wallpaper in wallpapers)
         {
             string playlistFile;
-            if (wallpaper.WEData["type"].ToString() == "scene")
+            if (wallpaper.WEData["type"].ToString() == "scene" && !FileAccess.FileExists(wallpaper.FullPath + "/scene.json"))
             {
-                playlistFile = "scene.pkg"; // Strange edge case
+                playlistFile = "scene.pkg"; // Strange edge case for workshop files
             } 
             else
             {

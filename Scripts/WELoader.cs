@@ -2,17 +2,22 @@ using Godot;
 using Godot.Collections;
 using Godot.NativeInterop;
 using System;
+using System.Collections.Generic;
 
 public partial class WELoader : Node
 {
     [Export]
     public string WEWorkshopPath = @"C:\Program Files (x86)\Steam\steamapps\workshop\content\431960";
     [Export]
+    public string WELocalPath = @"C:\Program Files (x86)\Steam\steamapps\common\wallpaper_engine\projects\myprojects";
+    [Export]
     public string WEPrefsPath = @"C:\Program Files (x86)\Steam\steamapps\common\wallpaper_engine\config.json";
     [Export]
     Container WallpaperPreviewContainer;
     [Export]
     PackedScene WallpaperPreviewScene;
+    [Export]
+    Texture2D PlaceholderImageTexture;
 
     [Signal]
     public delegate void WallpaperLoadedEventHandler(WallpaperPreview wallpaper);
@@ -24,7 +29,13 @@ public partial class WELoader : Node
     public override void _Ready()
     {
         Globals.Preferences = LoadWEPrefs();
-        LoadWorkshopItems();
+        var wallpapers = LoadWallpapersFrom(WEWorkshopPath);
+        wallpapers.AddRange(LoadWallpapersFrom(WELocalPath));
+        wallpapers.Sort((w1, w2) => String.Compare(w1.Info.Title, w2.Info.Title, StringComparison.InvariantCultureIgnoreCase));
+        foreach (var wallpaper in wallpapers)
+        {
+            WallpaperPreviewContainer.AddChild(wallpaper);
+        }
         _instance = this;
     }
 
@@ -33,16 +44,17 @@ public partial class WELoader : Node
         return _instance.WEPrefsPath;
     }
 
-    public void LoadWorkshopItems()
+    public List<WallpaperPreview> LoadWallpapersFrom(string path)
     {
-        var dir = DirAccess.Open(WEWorkshopPath);
+        List<WallpaperPreview> res = [];
+        var dir = DirAccess.Open(path);
         if (dir is null)
         {
             GD.PrintErr("Failed to open workshop path: " + DirAccess.GetOpenError());
-            return;
+            return res;
         }
         dir.ListDirBegin();
-        string folderName = "";
+        string folderName;
         while ((folderName = dir.GetNext()) != "")
         {
             if (!dir.CurrentIsDir()) { continue; }
@@ -70,16 +82,17 @@ public partial class WELoader : Node
 
             WallpaperPreview preview = WallpaperPreviewScene.Instantiate<WallpaperPreview>();
             preview.Info = info;
+            preview.Name = preview.Info.Identifier;
             Globals.LoadedWallpapers.Add(info);
+
             var texture = LoadPreviewImage(preview, dir.GetCurrentDir() + "/" + folderName);
-            if (texture is not null)
-            {
-                Globals.LoadedWallpaperTextures[info.Title] = texture;
-                preview.PreviewImage = texture;
-            }
-            WallpaperPreviewContainer.AddChild(preview);
+            Globals.LoadedWallpaperTextures[info.Title] = texture;
+            preview.PreviewImage = texture;
+
+            res.Add(preview);
             EmitSignal(SignalName.WallpaperLoaded, preview);
         }
+        return res;
     }
 
     private void LoadCustomData(WallpaperInfo info) 
@@ -93,7 +106,7 @@ public partial class WELoader : Node
         var previewPath = preview.Info.PreviewPath;
         if (previewPath == null)
         {
-            return null;
+            return PlaceholderImageTexture;
         }
 
         var path = absoluteDir + "\\" + previewPath;
@@ -105,7 +118,7 @@ public partial class WELoader : Node
             if (FileAccess.GetOpenError() != Error.Ok)
             {
                 GD.PrintErr($"Failed to load image file data ({path}): " + FileAccess.GetOpenError());
-                return null;
+                return PlaceholderImageTexture;
             }
             texture = AnimatedTextureFromBuffer(data);
         } 
@@ -115,14 +128,14 @@ public partial class WELoader : Node
             if (image is null)
             {
                 GD.PrintErr($"Failed to load image {path}");
-                return null;
+                return PlaceholderImageTexture;
             }
             texture = ImageTexture.CreateFromImage(image);
         }
         if (texture is null)
         {
             GD.PrintErr("Failed to load image: " + path);
-            return null;
+            return PlaceholderImageTexture;
         }
         GD.Print($"Successfully loaded '{preview.Info.Title}'");
         return texture;

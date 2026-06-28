@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://ce6qf8gwbbjku"]
 
-[ext_resource type="Theme" uid="uid://dxpd6rckn4unn" path="res://Themes/main_theme.tres" id="1_qqg2e"]
+[ext_resource type="Theme" uid="uid://dxpd6rckn4unn" path="res://Resources/main_theme.tres" id="1_qqg2e"]
 [ext_resource type="Script" uid="uid://o2fstqi2olit" path="res://Scripts/PlaylistCreator.cs" id="2_iuu80"]
-[ext_resource type="Theme" uid="uid://cjckkb8jxwok" path="res://Themes/title.tres" id="2_o6f60"]
-[ext_resource type="Theme" uid="uid://cuxc4yyeyw8ej" path="res://Themes/hero_button.tres" id="2_ppgd2"]
+[ext_resource type="Theme" uid="uid://cjckkb8jxwok" path="res://Resources/title.tres" id="2_o6f60"]
+[ext_resource type="Theme" uid="uid://cuxc4yyeyw8ej" path="res://Resources/hero_button.tres" id="2_ppgd2"]
 [ext_resource type="Texture2D" uid="uid://dye5ht74fii4i" path="res://Icons/angle-down-solid.png" id="3_o6f60"]
 [ext_resource type="PackedScene" uid="uid://mgku7pdm04se" path="res://Scenes/filter_rule.tscn" id="4_u2nt2"]
 [ext_resource type="PackedScene" uid="uid://dvweo4jjt8oes" path="res://Scenes/tag_label.tscn" id="5_8dob8"]
@@ -173,3 +173,4 @@ visible = false
 [connection signal="active_tab_rearranged" from="HBoxContainer/Body/VBoxContainer/HBoxContainer/TabBar" to="." method="OnActiveTabRearranged"]
 [connection signal="tab_selected" from="HBoxContainer/Body/VBoxContainer/HBoxContainer/TabBar" to="." method="OnTabSelected"]
 [connection signal="pressed" from="HBoxContainer/Body/VBoxContainer/SaveButton" to="." method="OnSaveAsPressed"]
+[connection signal="pressed" from="HBoxContainer/Body/Button" to="." method="OnBackPressed"]

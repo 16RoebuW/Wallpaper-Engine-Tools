@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://c0skiprnrk5he"]
 
-[ext_resource type="Theme" uid="uid://cjckkb8jxwok" path="res://Themes/title.tres" id="1_8ndbh"]
+[ext_resource type="Theme" uid="uid://cjckkb8jxwok" path="res://Resources/title.tres" id="1_8ndbh"]
 [ext_resource type="Script" uid="uid://bli5oekp0gd2o" path="res://Scripts/SaveAsPopup.cs" id="1_c7hw2"]
-[ext_resource type="Theme" uid="uid://cuxc4yyeyw8ej" path="res://Themes/hero_button.tres" id="2_c7hw2"]
+[ext_resource type="Theme" uid="uid://cuxc4yyeyw8ej" path="res://Resources/hero_button.tres" id="2_c7hw2"]
 
 [node name="SaveAsPopup" type="PopupPanel" unique_id=759784018 node_paths=PackedStringArray("SaveButton", "LineEdit")]
 oversampling_override = 1.0
@@ -21,9 +21,9 @@ anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 0.5
 offset_left = 4.0
-offset_top = -69.0
-offset_right = -4.0
-offset_bottom = 69.0
+offset_top = 4.0
+offset_right = 1004.0
+offset_bottom = 142.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 10

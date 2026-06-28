@@ -3,12 +3,14 @@
 [ext_resource type="Script" uid="uid://bxhf3ktre30k2" path="res://Scripts/WELoader.cs" id="1_1h7kx"]
 [ext_resource type="Texture2D" uid="uid://bpkdufx0trn50" path="res://Icons/gear-solid.png" id="1_4p432"]
 [ext_resource type="Texture2D" uid="uid://dok5hq0awp215" path="res://preview.gif" id="1_43o50"]
-[ext_resource type="Theme" uid="uid://dxpd6rckn4unn" path="res://Themes/main_theme.tres" id="1_tmsnl"]
+[ext_resource type="Theme" uid="uid://dxpd6rckn4unn" path="res://Resources/main_theme.tres" id="1_tmsnl"]
 [ext_resource type="PackedScene" uid="uid://bw1h3gyq6yg2x" path="res://Scenes/wallpaper_preview.tscn" id="2_5v4cw"]
 [ext_resource type="PackedScene" uid="uid://d3gxrhcawkiu4" path="res://Scenes/tag_button.tscn" id="2_g8jsr"]
-[ext_resource type="Theme" uid="uid://cuxc4yyeyw8ej" path="res://Themes/hero_button.tres" id="5_ucp0k"]
+[ext_resource type="Theme" uid="uid://cuxc4yyeyw8ej" path="res://Resources/hero_button.tres" id="5_ucp0k"]
+[ext_resource type="Texture2D" uid="uid://33h5yuj6sijj" path="res://Icons/no-image.png" id="7_s0iw1"]
 [ext_resource type="Script" uid="uid://cajodgb4wqc73" path="res://Scripts/UiController.cs" id="8_epkga"]
 [ext_resource type="PackedScene" uid="uid://ce6qf8gwbbjku" path="res://Scenes/playlist_creator.tscn" id="9_4ckoh"]
+[ext_resource type="PackedScene" uid="uid://chxec4yvhnyqu" path="res://Scenes/foldable_tag_container.tscn" id="10_pnowx"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_epkga"]
 content_margin_left = 2.0
@@ -71,8 +73,48 @@ size_flags_horizontal = 3
 [node name="Browser" type="HSplitContainer" parent="Body/VBoxContainer" unique_id=2051906914]
 layout_mode = 2
 size_flags_vertical = 3
+split_offsets = PackedInt32Array(0, 1, 0)
 dragging_enabled = false
 dragger_visibility = 2
+
+[node name="FilterPanel" type="Panel" parent="Body/VBoxContainer/Browser" unique_id=1736845205]
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.2
+
+[node name="MarginContainer" type="MarginContainer" parent="Body/VBoxContainer/Browser/FilterPanel" unique_id=242103558]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 8
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Body/VBoxContainer/Browser/FilterPanel/MarginContainer" unique_id=574580911]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ScrollSpacerContainer" type="VBoxContainer" parent="Body/VBoxContainer/Browser/FilterPanel/MarginContainer/ScrollContainer" unique_id=1461668821]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="ClearButton" type="Button" parent="Body/VBoxContainer/Browser/FilterPanel/MarginContainer/ScrollContainer/ScrollSpacerContainer" unique_id=1604418817]
+layout_mode = 2
+text = "Clear"
+
+[node name="TagButtonContainer" type="VBoxContainer" parent="Body/VBoxContainer/Browser/FilterPanel/MarginContainer/ScrollContainer/ScrollSpacerContainer" unique_id=957077802]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="ScrollSpacer" type="Control" parent="Body/VBoxContainer/Browser/FilterPanel/MarginContainer/ScrollContainer/ScrollSpacerContainer" unique_id=760515526]
+custom_minimum_size = Vector2(0, 500)
+layout_mode = 2
+size_flags_vertical = 3
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Body/VBoxContainer/Browser" unique_id=2066032603]
 layout_mode = 2
@@ -88,6 +130,7 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+alignment = 1
 
 [node name="ScrollSpacer" type="Control" parent="Body/VBoxContainer/Browser/ScrollContainer/VBoxContainer" unique_id=1357822708]
 custom_minimum_size = Vector2(0, 500)
@@ -175,20 +218,27 @@ text = "Create Playlist"
 script = ExtResource("1_1h7kx")
 WallpaperPreviewContainer = NodePath("../Body/VBoxContainer/Browser/ScrollContainer/VBoxContainer/Wallpapers")
 WallpaperPreviewScene = ExtResource("2_5v4cw")
+PlaceholderImageTexture = ExtResource("7_s0iw1")
 
-[node name="UIController" type="Node" parent="." unique_id=464476138 node_paths=PackedStringArray("TagContainer", "TagSearchBox", "DetailsTitle", "DetailsPreview", "WallpaperContainer")]
+[node name="UIController" type="Node" parent="." unique_id=464476138 node_paths=PackedStringArray("ItemTagContainer", "TagSearchBox", "DetailsTitle", "DetailsPreview", "WallpaperContainer", "PlaylistCreator", "FilterTagContainer")]
 script = ExtResource("8_epkga")
 TagOptionScene = ExtResource("2_g8jsr")
-TagContainer = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/ScrollContainer/ScrollSpacerContainer/TagButtonContainer")
+ItemTagContainer = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/ScrollContainer/ScrollSpacerContainer/TagButtonContainer")
 TagSearchBox = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/TagSearch")
 DetailsTitle = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/Label")
 DetailsPreview = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/TextureRect")
 MainTheme = ExtResource("1_tmsnl")
 WallpaperContainer = NodePath("../Body/VBoxContainer/Browser/ScrollContainer/VBoxContainer/Wallpapers")
+PlaylistCreator = NodePath("../PlaylistCreator")
+FilterTagContainer = NodePath("../Body/VBoxContainer/Browser/FilterPanel/MarginContainer/ScrollContainer/ScrollSpacerContainer/TagButtonContainer")
+FoldableTagContainerScene = ExtResource("10_pnowx")
 
 [node name="PlaylistCreator" parent="." unique_id=66200200 instance=ExtResource("9_4ckoh")]
+visible = false
 layout_mode = 1
 
+[connection signal="pressed" from="Body/VBoxContainer/Browser/FilterPanel/MarginContainer/ScrollContainer/ScrollSpacerContainer/ClearButton" to="UIController" method="OnFilterClearedPressed"]
 [connection signal="text_changed" from="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/TagSearch" to="UIController" method="OnTagSearchTextChanged"]
 [connection signal="pressed" from="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/AddTagButton" to="UIController" method="OnAddTagPressed"]
+[connection signal="pressed" from="Body/PanelContainer/MarginContainer/CreateButton" to="UIController" method="OnCreatePlaylistPressed"]
 [connection signal="WallpaperLoaded" from="WELoader" to="UIController" method="OnWallpaperLoaded"]

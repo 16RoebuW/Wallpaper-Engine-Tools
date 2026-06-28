@@ -32,10 +32,28 @@ expand_margin_top = 2.0
 expand_margin_right = 2.0
 expand_margin_bottom = 2.0
 
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_lq07f"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_rpoj5"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_7ygoy"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_b4loo"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_jniar"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_jgrfi"]
+
 [resource]
 Button/styles/hover = SubResource("StyleBoxFlat_j4s34")
 CheckBox/colors/checkbox_checked_color = Color(0, 0.49019608, 1, 1)
 CheckBox/styles/focus = SubResource("StyleBoxFlat_8cjo3")
+FoldableContainer/styles/focus = SubResource("StyleBoxEmpty_lq07f")
+FoldableContainer/styles/panel = SubResource("StyleBoxEmpty_rpoj5")
+FoldableContainer/styles/title_collapsed_hover_panel = SubResource("StyleBoxEmpty_7ygoy")
+FoldableContainer/styles/title_collapsed_panel = SubResource("StyleBoxEmpty_b4loo")
+FoldableContainer/styles/title_hover_panel = SubResource("StyleBoxEmpty_jniar")
+FoldableContainer/styles/title_panel = SubResource("StyleBoxEmpty_jgrfi")
 LinkButton/colors/font_color = Color(0, 0.49019608, 1, 1)
 LinkButton/colors/font_hover_color = Color(0.5494349, 0.7896997, 1, 1)
 LinkButton/colors/font_pressed_color = Color(0, 0.14117648, 1, 1)

@@ -1,9 +1,8 @@
 using Godot;
 using Godot.Collections;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System;
-
 using Dictionary = Godot.Collections.Dictionary;
 
 public partial class UiController : Node
@@ -11,7 +10,7 @@ public partial class UiController : Node
     [Export]
     PackedScene TagOptionScene;
     [Export]
-    Container TagContainer;
+    Container ItemTagContainer;
     [Export]
     LineEdit TagSearchBox;
     [Export]
@@ -22,10 +21,22 @@ public partial class UiController : Node
     Theme MainTheme;
     [Export]
     Container WallpaperContainer;
+    [Export]
+    Control PlaylistCreator;
+    [Export]
+    Container FilterTagContainer;
+    [Export]
+    PackedScene FoldableTagContainerScene;
 
     private WallpaperInfo selectedWallpaper;
 
-    private HashSet<TagButton> filteredTags = [];
+    private List<TagButton> detailTags = [];
+    private List<TagButton> filterTags = [];
+
+    private HashSet<TagButton> filteredDetailTags = [];
+    
+    private HashSet<string> filter = [];
+
     private string oldText = "longer_than_blank";
 
     private Button fakeFocussedNode;
@@ -43,17 +54,29 @@ public partial class UiController : Node
 
         foreach (var kv in Globals.GetBuiltinTags())
         {
-            AddTagNodeToDetailsPane(kv.Key, true, kv.Value);
+            NewDetailsTagNode(kv.Key, true, kv.Value, "Built in");
+            NewFilterTagNode(kv.Key, kv.Value, "Built in");
         }
 
         LoadCustomTags();
 
         foreach (var kv in Globals.GetCustomTags())
         {
-            AddTagNodeToDetailsPane(kv.Key, colour: kv.Value);
+            NewDetailsTagNode(kv.Key, colour: kv.Value, category: "Custom");
+            NewFilterTagNode(kv.Key, kv.Value, "Custom");
         }
 
         TagSearchBox.Editable = false;
+    }
+
+    private void OnFilterClearedPressed()
+    {
+        filter.Clear();
+    }
+
+    private void OnCreatePlaylistPressed()
+    {
+        PlaylistCreator.Show();
     }
 
     private void LoadCustomTags()
@@ -89,7 +112,7 @@ public partial class UiController : Node
             }
             var node = AddCustomTag(formatted, GetSchemeColor(selectedWallpaper));
             SetItemTag(selectedWallpaper, formatted, true);
-            filteredTags.Add(node);
+            filteredDetailTags.Add(node);
         }
     }
 
@@ -98,7 +121,8 @@ public partial class UiController : Node
         var tagColour = colour ?? new Color(1, 1, 1);
         Globals.AddCustomTag(tag, tagColour);
         ToolsDataManager.SaveCustomTags(Globals.GetCustomTags());
-        return AddTagNodeToDetailsPane(tag, colour: tagColour);
+        NewFilterTagNode(tag, tagColour, category: "Custom");
+        return NewDetailsTagNode(tag, colour: tagColour, category: "Custom");
     }
 
     private void RemoveCustomTag(string tag)
@@ -137,7 +161,7 @@ public partial class UiController : Node
         // Order matters here because shift+tab (focus prev) means that tab is pressed as well (focus next)
         if (Input.IsActionJustPressed("ui_up") || Input.IsActionJustPressed("ui_focus_prev"))
         {
-            var prev = GetPreviousVisibleTag(fakeFocussedNode.GetParent().GetIndex(), TagContainer);
+            var prev = GetPreviousVisibleTag(fakeFocussedNode.GetParent().GetIndex());
             if (prev is not null)
             {
                 FakeFocus(prev.CheckBox);
@@ -145,7 +169,7 @@ public partial class UiController : Node
         }
         else if (Input.IsActionJustPressed("ui_down") || Input.IsActionJustPressed("ui_focus_next")) 
         {
-            var next = GetNextVisibleTag(fakeFocussedNode.GetParent().GetIndex(), TagContainer);
+            var next = GetNextVisibleTag(fakeFocussedNode.GetParent().GetIndex());
             if (next is not null)
             {
                 FakeFocus(next.CheckBox);
@@ -205,7 +229,28 @@ public partial class UiController : Node
             return;
         }
     }
-    
+
+    private void LoadSpecialTags(Dictionary prefs, string name, Func<string, WallpaperInfo, bool> tagCriteria)
+    {
+        throw new NotImplementedException();
+        try
+        {
+            var current = Globals.LoadFromUntrustworthyDict(prefs, ["general", "browser", "filterinfo", "installed", name]);
+            Godot.Collections.Dictionary<string, Color> tags = [];
+
+            foreach (var tag in current.AsGodotDictionary().Keys)
+            {
+                tags.Add(tag.AsString(), new Color(1, 1, 1));
+            }
+            Globals.SetBuiltinTags(tags);
+        }
+        catch (KeyNotFoundException e)
+        {
+            GD.PrintErr($"Failed to get tags: {e.Message}");
+            return;
+        }
+    }
+
     private Color? GetSchemeColor(WallpaperInfo wallpaper)
     {
         try
@@ -235,7 +280,7 @@ public partial class UiController : Node
         }
     }
 
-    private TagButton AddTagNodeToDetailsPane(string tag, bool disabled=false, Color? colour = null)
+    private TagButton NewDetailsTagNode(string tag, bool disabled=false, Color? colour = null, string category = null)
     {
         TagButton node = TagOptionScene.Instantiate<TagButton>();
         node.CheckBox.Text = tag;
@@ -247,14 +292,75 @@ public partial class UiController : Node
             node.Icon.SelfModulate = notNull;
         }
         node.CheckBox.Toggled += (toggledOn) => OnDetailsTagToggled(node, toggledOn);
-        TagContainer.AddChild(node);
+        if (category != null)
+        {
+            if (ItemTagContainer.HasNode(category))
+            {
+                ItemTagContainer.GetNode(category).GetChild(0).AddChild(node);
+            } else {
+                var newCategory = FoldableTagContainerScene.Instantiate<FoldableContainer>();
+                newCategory.Title = category;
+                newCategory.Name = category;
+                ItemTagContainer.AddChild(newCategory);
+                newCategory.GetChild(0).AddChild(node);
+            }
+        } else {
+            ItemTagContainer.AddChild(node);
+        }
+        detailTags.Add(node);
         return node;
+    }
+
+    private TagButton NewFilterTagNode(string tag, Color? colour = null, string category = null)
+    {
+        TagButton node = TagOptionScene.Instantiate<TagButton>();
+        node.CheckBox.Text = tag;
+        node.Name = tag;
+        node.CheckBox.Toggled += (toggledOn) => OnFilterTagToggled(node, toggledOn);
+        if (colour is Color notNull)
+        {
+            node.ColorPicker.Color = notNull;
+            node.Icon.SelfModulate = notNull;
+        }
+        node.ColorPicker.Hide();
+        if (category != null)
+        {
+            if (FilterTagContainer.HasNode(category))
+            {
+                FilterTagContainer.GetNode(category).GetChild(0).AddChild(node);
+            }
+            else
+            {
+                var newCategory = FoldableTagContainerScene.Instantiate<FoldableContainer>();
+                newCategory.Title = category;
+                newCategory.Name = category;
+                FilterTagContainer.AddChild(newCategory);
+                newCategory.GetChild(0).AddChild(node);
+            }
+        }
+        else
+        {
+            FilterTagContainer.AddChild(node);
+        }
+        filterTags.Add(node);
+        return node;
+    }
+
+    private void OnFilterTagToggled(TagButton node, bool toggledOn)
+    {
+
     }
 
     private void RemoveTagFromDetailsPane(string tag)
     {
-        TagButton node = TagContainer.GetNode<TagButton>(tag);
-        node.QueueFree();
+        foreach (TagButton node in detailTags)
+        {
+            if (node.Name == tag)
+            {
+                node.QueueFree();
+                return;
+            }
+        }
     }
 
     public void OnWallpaperLoaded(WallpaperPreview wallpaper)
@@ -281,13 +387,19 @@ public partial class UiController : Node
     {
         foreach (string tag in tags)
         {
-            TagButton node = TagContainer.GetNodeOrNull<TagButton>(tag);
-            if (node is null)
+            bool found = false;
+            foreach (var tagButton in detailTags)
+            {
+                tagButton.CheckBox.SetPressedNoSignal(pressed);
+                found = true;
+                break;
+            }
+
+            if (!found)
             {
                 GD.PrintErr($"Failed to get node for tag {tag}");
                 continue;
             }
-            node.CheckBox.SetPressedNoSignal(pressed);
         }
     }
 
@@ -295,37 +407,34 @@ public partial class UiController : Node
     {
         if (newText.Length < oldText.Length)
         {
-            filteredTags.Clear();
-            foreach (Node node in TagContainer.GetChildren())
+            filteredDetailTags.Clear();
+            foreach (TagButton tag in detailTags)
             {
-                if (node is TagButton tag)
+                if (tag.Name.ToString().Contains(newText, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    if (tag.Name.ToString().Contains(newText, StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        filteredTags.Add(tag);
-                        tag.Visible = true;
-                    }
-                    else
-                    {
-                        tag.Visible = false;
-                    }
+                    filteredDetailTags.Add(tag);
+                    tag.Visible = true;
+                }
+                else
+                {
+                    tag.Visible = false;
                 }
             }
         }
         else
         {
-            foreach (TagButton tag in filteredTags)
+            foreach (TagButton tag in filteredDetailTags)
             {
                 if (tag.Name.ToString().Contains(newText, StringComparison.InvariantCultureIgnoreCase))
                 {
                     continue;
                 }
-                filteredTags.Remove(tag);
+                filteredDetailTags.Remove(tag);
                 tag.Visible = false;
             }
         }
 
-        var topTag = GetNextVisibleTag(-1, TagContainer);
+        var topTag = GetNextVisibleTag(-1);
         if (topTag is not null)
         {
             FakeFocus(topTag.CheckBox);
@@ -334,11 +443,11 @@ public partial class UiController : Node
         oldText = newText;
     }
 
-    private TagButton GetNextVisibleTag(int from, Container tagContainer)
+    private TagButton GetNextVisibleTag(int from)
     {
-        for (int i = from + 1; i < tagContainer.GetChildCount(); i++)
+        for (int i = from + 1; i < detailTags.Count; i++)
         {
-            var tag = tagContainer.GetChild<TagButton>(i);
+            var tag = detailTags[i];
             if (tag.Visible == true)
             {
                 return tag;
@@ -347,7 +456,7 @@ public partial class UiController : Node
         // Loop round
         for (int i = 0; i <= from; i++)
         {
-            var tag = tagContainer.GetChild<TagButton>(i);
+            var tag = detailTags[i];
             if (tag.Visible == true)
             {
                 return tag;
@@ -356,20 +465,20 @@ public partial class UiController : Node
         return null;
     }
     
-    private TagButton GetPreviousVisibleTag(int from, Container tagContainer)
+    private TagButton GetPreviousVisibleTag(int from)
     {
         for (int i = from - 1; i >= 0; i--)
         {
-            var tag = tagContainer.GetChild<TagButton>(i);
+            var tag = detailTags[i];
             if (tag.Visible == true)
             {
                 return tag;
             }
         }
         // Loop round
-        for (int i = GetChildCount() - 1; i >= from; i--)
+        for (int i = detailTags.Count - 1; i >= from; i--)
         {
-            var tag = tagContainer.GetChild<TagButton>(i);
+            var tag = detailTags[i];
             if (tag.Visible == true)
             {
                 return tag;
