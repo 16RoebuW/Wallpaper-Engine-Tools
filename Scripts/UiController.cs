@@ -35,9 +35,11 @@ public partial class UiController : Node
 
     private HashSet<TagButton> filteredDetailTags = [];
     
-    private HashSet<string> filter = [];
+    private System.Collections.Generic.Dictionary<string, HashSet<string>> filter = [];
 
     private string oldText = "longer_than_blank";
+
+    private readonly string defaultTagType = "normal";
 
     private Button fakeFocussedNode;
 
@@ -66,12 +68,77 @@ public partial class UiController : Node
             NewFilterTagNode(kv.Key, kv.Value, "Custom");
         }
 
+        LoadSpecialTags(prefs);
+
+        foreach (string tagType in Globals.SupportedSpecialTags)
+        {
+            foreach (var kv in Globals.GetSpecialTags(tagType))
+            {
+                NewFilterTagNode(kv.Key, kv.Value, "Meta", tagType);
+            }
+        }
+
         TagSearchBox.Editable = false;
+    }
+
+    private void FilterWallpaperPreviews()
+    {
+        for (int i = 0; i < WallpaperContainer.GetChildCount(); i++)
+        {
+            var wallpaper = WallpaperContainer.GetChildOrNull<WallpaperPreview>(i);
+            if (wallpaper is null)
+            {
+                return;
+            }
+            wallpaper.Show();
+            foreach (var tagType in filter)
+            {
+                if (!WallpaperMatchesTags(wallpaper.Info, tagType))
+                {
+                    wallpaper.Hide();
+                    break;
+                }
+            }
+        }
+    }
+
+    private bool WallpaperMatchesTags(WallpaperInfo wallpaper, KeyValuePair<string, HashSet<string>> tagType)
+    {
+        if (tagType.Key == defaultTagType)
+        {
+            foreach (var tag in tagType.Value)
+            {
+                if (!wallpaper.Tags.Contains(tag))
+                {
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            foreach (var tag in tagType.Value)
+            {
+                if (!Globals.HasSpecialTag(wallpaper, tagType.Key, tag))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private void OnFilterClearedPressed()
     {
-        filter.Clear();
+        foreach (var kv in filter)
+        {
+            kv.Value.Clear();
+        }
+        foreach (var btn in filterTags)
+        {
+            btn.CheckBox.SetPressedNoSignal(false);
+        }
+        FilterWallpaperPreviews();
     }
 
     private void OnCreatePlaylistPressed()
@@ -110,7 +177,7 @@ public partial class UiController : Node
             {
                 formatted = TagSearchBox.Text[..1].ToUpper() + TagSearchBox.Text[1..];
             }
-            var node = AddCustomTag(formatted, GetSchemeColor(selectedWallpaper));
+            var node = AddCustomTag(formatted, selectedWallpaper.GetSchemeColor());
             SetItemTag(selectedWallpaper, formatted, true);
             filteredDetailTags.Add(node);
         }
@@ -230,54 +297,37 @@ public partial class UiController : Node
         }
     }
 
-    private void LoadSpecialTags(Dictionary prefs, string name, Func<string, WallpaperInfo, bool> tagCriteria)
+    private void LoadSpecialTags(Dictionary prefs)
     {
-        throw new NotImplementedException();
-        try
+        // Built in special tags
+        foreach (string tagType in Globals.SupportedSpecialTags)
         {
-            var current = Globals.LoadFromUntrustworthyDict(prefs, ["general", "browser", "filterinfo", "installed", name]);
-            Godot.Collections.Dictionary<string, Color> tags = [];
+            try
+            {
+                Godot.Collections.Dictionary<string, Color> tags = [];
+                var current = Globals.LoadFromUntrustworthyDict(prefs, ["general", "browser", "filterinfo", "installed", tagType]);
+                foreach (var tag in current.AsGodotDictionary().Keys)
+                {
+                    tags.Add(tag.AsString(), new Color(1, 1, 1));
+                }
+                Globals.SetSpecialTags(tagType, tags);
+            }
+            catch (KeyNotFoundException)
+            {
+                continue;
+            }
+        }
 
-            foreach (var tag in current.AsGodotDictionary().Keys)
-            {
-                tags.Add(tag.AsString(), new Color(1, 1, 1));
-            }
-            Globals.SetBuiltinTags(tags);
-        }
-        catch (KeyNotFoundException e)
-        {
-            GD.PrintErr($"Failed to get tags: {e.Message}");
-            return;
-        }
-    }
+        // Custom special tags
+        Globals.SetSpecialTags("thumbnail", new() { {"Thumbnail", new Color(1,1,1)}, { "No thumbnail", new Color(1, 1, 1) } });
 
-    private Color? GetSchemeColor(WallpaperInfo wallpaper)
-    {
-        try
+        string[] colours = ["Red", "Orange", "Yellow", "LimeGreen", "DodgerBlue", "Purple", "HotPink", "White", "Black"];
+        Godot.Collections.Dictionary<string, Color> colourTags = [];
+        foreach (string colour in colours)
         {
-            var colour = Globals.LoadFromUntrustworthyDict(wallpaper.WEData, ["general", "properties", "schemecolor", "value"]);
-            // Colour is in string "float float float" form. (or doubles perhaps)
-            var floatStrings = colour.AsString().Split(' ');
-            if (floatStrings.Length != 3)
-            {
-                return null;
-            }
-            float[] parsed = new float[floatStrings.Length];
-            for (int i = 0; i < 3; i++)
-            {
-                parsed[i] = float.Parse(floatStrings[i], CultureInfo.InvariantCulture.NumberFormat);
-            }
-            return new Color(parsed[0], parsed[1], parsed[2]);
+            colourTags.Add(colour, new Color(colour));
         }
-        catch (KeyNotFoundException)
-        {
-            return null;
-        }
-        catch (FormatException e)
-        {
-            GD.PrintErr($"Failed to parse float: {e.Message}");
-            return null;
-        }
+        Globals.SetSpecialTags("colour", colourTags);
     }
 
     private TagButton NewDetailsTagNode(string tag, bool disabled=false, Color? colour = null, string category = null)
@@ -311,12 +361,17 @@ public partial class UiController : Node
         return node;
     }
 
-    private TagButton NewFilterTagNode(string tag, Color? colour = null, string category = null)
+    private TagButton NewFilterTagNode(string tag, Color? colour = null, string category = null, string specialType = null)
     {
         TagButton node = TagOptionScene.Instantiate<TagButton>();
         node.CheckBox.Text = tag;
         node.Name = tag;
-        node.CheckBox.Toggled += (toggledOn) => OnFilterTagToggled(node, toggledOn);
+        if (specialType == null)
+        {
+            node.CheckBox.Toggled += (toggledOn) => OnFilterTagToggled(tag, toggledOn);
+        } else {
+            node.CheckBox.Toggled += (toggledOn) => OnSpecialFilterTagToggled(specialType, tag, toggledOn);
+        }
         if (colour is Color notNull)
         {
             node.ColorPicker.Color = notNull;
@@ -346,9 +401,41 @@ public partial class UiController : Node
         return node;
     }
 
-    private void OnFilterTagToggled(TagButton node, bool toggledOn)
+    private void OnSpecialFilterTagToggled(string specialType, string tag, bool toggledOn)
     {
+        if (toggledOn)
+        {
+            if (!filter.TryGetValue(specialType, out HashSet<string> value))
+            {
+                filter.Add(specialType, [tag]);
+            }
+            else
+            {
+                value.Add(tag);
+            }
+        }
+        else
+        {
+            filter[specialType].Remove(tag);
+        }
+        FilterWallpaperPreviews();
+    }
 
+    private void OnFilterTagToggled(string tag, bool toggledOn)
+    {
+        if (toggledOn)
+        {
+            if (!filter.TryGetValue(defaultTagType, out HashSet<string> value))
+            {
+                filter.Add(defaultTagType, [tag]);
+            } else {
+                value.Add(tag);
+            }
+        } else
+        {
+            filter[defaultTagType].Remove(tag);
+        }
+        FilterWallpaperPreviews();
     }
 
     private void RemoveTagFromDetailsPane(string tag)

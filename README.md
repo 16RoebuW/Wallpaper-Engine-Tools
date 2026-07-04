@@ -4,6 +4,7 @@ Provides some simple tools for managing wallpaper engine wallpapers until better
 
 # Features
 - Custom tags
+- Generate playlists based on tags
 
 # To do:
 - Load local wallpapers
@@ -12,7 +13,6 @@ Provides some simple tools for managing wallpaper engine wallpapers until better
 - Visual display of tags per item
 - Multi-select
 - Tag painter
-- Generate playlists based on tags
 - Filter by tag
 - Some more docs
 - Steam API for proper titles: https://partner.steamgames.com/doc/sdk/api

@@ -1,6 +1,8 @@
 using Godot;
 using Godot.Collections;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 public partial class WallpaperInfo
@@ -57,6 +59,35 @@ public partial class WallpaperInfo
         foreach (var tag in tagDict["tags"].AsGodotArray())
         {
             Tags.Add(tag.ToString());
+        }
+    }
+
+    public Color? GetSchemeColor()
+    {
+        try
+        {
+            var colour = Globals.LoadFromUntrustworthyDict(WEData, ["general", "properties", "schemecolor", "value"]);
+            // Colour is in string "float float float" form. (or doubles perhaps)
+            var floatStrings = colour.AsString().Split(' ');
+            if (floatStrings.Length != 3)
+            {
+                return null;
+            }
+            float[] parsed = new float[floatStrings.Length];
+            for (int i = 0; i < 3; i++)
+            {
+                parsed[i] = float.Parse(floatStrings[i], CultureInfo.InvariantCulture.NumberFormat);
+            }
+            return new Color(parsed[0], parsed[1], parsed[2]);
+        }
+        catch (KeyNotFoundException)
+        {
+            return null;
+        }
+        catch (FormatException e)
+        {
+            GD.PrintErr($"Failed to parse float: {e.Message}");
+            return null;
         }
     }
 
