@@ -3,6 +3,7 @@ using Godot.Collections;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Dictionary = Godot.Collections.Dictionary;
 
 public partial class UiController : Node
@@ -27,8 +28,12 @@ public partial class UiController : Node
     Container FilterTagContainer;
     [Export]
     PackedScene FoldableTagContainerScene;
+    [Export]
+    Texture2D AmbiguousCheckBoxEnabled;
+    [Export]
+    Texture2D AmbiguousCheckBoxDisabled;
 
-    private WallpaperInfo selectedWallpaper;
+    private List<WallpaperPreview> selectedWallpapers = [];
 
     private List<TagButton> detailTags = [];
     private List<TagButton> filterTags = [];
@@ -161,11 +166,14 @@ public partial class UiController : Node
 
     public void OnDetailsTagToggled(TagButton detailsTag, bool tagged)
     {
-        if (selectedWallpaper is null)
+        if (selectedWallpapers is null)
         {
             return;
         }
-        SetItemTag(selectedWallpaper, detailsTag.Name, tagged);
+        foreach (var wallpaper in selectedWallpapers)
+        {
+            SetItemTag(wallpaper.Info, detailsTag.Name, tagged);
+        }
     }
 
     public void OnAddTagPressed()
@@ -177,8 +185,10 @@ public partial class UiController : Node
             {
                 formatted = TagSearchBox.Text[..1].ToUpper() + TagSearchBox.Text[1..];
             }
-            var node = AddCustomTag(formatted, selectedWallpaper.GetSchemeColor());
-            SetItemTag(selectedWallpaper, formatted, true);
+            var node = AddCustomTag(formatted, ActiveWallpaper().Info.GetSchemeColor());
+            foreach (var wallpaper in selectedWallpapers) { 
+                SetItemTag(wallpaper.Info, formatted, true);
+            }
             filteredDetailTags.Add(node);
         }
     }
@@ -244,7 +254,10 @@ public partial class UiController : Node
         }
         else if (Input.IsActionJustPressed("ui_accept") && fakeFocussedNode.Disabled == false)
         {
-            SetItemTag(selectedWallpaper, fakeFocussedNode.GetParent().Name, !fakeFocussedNode.ButtonPressed);
+            foreach (var wallpaper in selectedWallpapers)
+            {
+                SetItemTag(wallpaper.Info, fakeFocussedNode.GetParent().Name, !fakeFocussedNode.ButtonPressed);
+            }
         }
     }
 
@@ -261,7 +274,7 @@ public partial class UiController : Node
 
         ToolsDataManager.SaveCustomData(item.Identifier, GetCustomWallpaperData(item));
 
-        if (selectedWallpaper == item)
+        if (ActiveWallpaper() is not null && ActiveWallpaper().Info == item)
         {
             SetDetailsTagsState([tag], tagged);
         }
@@ -452,22 +465,87 @@ public partial class UiController : Node
 
     public void OnWallpaperLoaded(WallpaperPreview wallpaper)
     {
-        wallpaper.Pressed += () => OnWallpaperSelected(wallpaper);
+        wallpaper.Toggled += (toggledOn) => OnWallpaperSelected(wallpaper, toggledOn);
     }
 
-    private void OnWallpaperSelected(WallpaperPreview wallpaper)
+    private void OnWallpaperSelected(WallpaperPreview wallpaper, bool toggledOn)
     {
         TagSearchBox.Editable = true;
 
-        if (selectedWallpaper is not null)
+        if (Input.IsActionPressed("multi_select_modifier")) 
         {
-            SetDetailsTagsState(selectedWallpaper.Tags, false);
+            if (!toggledOn)
+            {
+                selectedWallpapers.Remove(wallpaper);
+                return;
+            }
+        } 
+        else
+        {
+            while (selectedWallpapers.Count > 0)
+            {
+                selectedWallpapers[0].SetPressedNoSignal(false);
+                selectedWallpapers.Remove(selectedWallpapers[0]);
+            }
         }
-        selectedWallpaper = wallpaper.Info;
 
-        DetailsTitle.Text = wallpaper.Info.Title;
-        DetailsPreview.Texture = wallpaper.PreviewImage;
-        SetDetailsTagsState(wallpaper.Info.Tags, true);
+        selectedWallpapers.Add(wallpaper);
+
+        DetailsTitle.Text = ActiveWallpaper().Info.Title;
+        DetailsPreview.Texture = ActiveWallpaper().PreviewImage;
+
+        SetCombinedDetailsTagsState(selectedWallpapers);
+    }
+
+    private WallpaperPreview ActiveWallpaper()
+    {
+        if (selectedWallpapers.Count == 0)
+        {
+            return null;
+        }
+        return selectedWallpapers[^1];
+    }
+
+    private void SetCombinedDetailsTagsState(List<WallpaperPreview> wallpapers)
+    {
+        if (wallpapers.Count == 0) { return; }
+
+        Godot.Collections.Dictionary<string, int> tagCounts = [];
+
+        foreach (var wallpaper in wallpapers)
+        {
+            foreach (var tag in wallpaper.Info.Tags)
+            {
+                if (tagCounts.TryGetValue(tag, out int val))
+                {
+                    tagCounts[tag] = val + 1;
+                } 
+                else
+                {
+                    tagCounts.Add(tag, 1);
+                }
+            }
+        }
+
+
+        foreach (var tagButton in detailTags)
+        {
+            tagButton.CheckBox.RemoveThemeIconOverride("checked");
+            tagButton.CheckBox.RemoveThemeIconOverride("checked_disabled");
+            if (tagCounts.TryGetValue(tagButton.Name, out int val))
+            {
+                tagButton.CheckBox.SetPressedNoSignal(true);
+                if (val != wallpapers.Count)
+                {
+                    tagButton.CheckBox.AddThemeIconOverride("checked", AmbiguousCheckBoxEnabled);
+                    tagButton.CheckBox.AddThemeIconOverride("checked_disabled", AmbiguousCheckBoxDisabled);
+                }
+            } 
+            else
+            {
+                tagButton.CheckBox.SetPressedNoSignal(false);
+            }
+        }
     }
 
     private void SetDetailsTagsState(HashSet<string> tags, bool pressed)
@@ -477,9 +555,12 @@ public partial class UiController : Node
             bool found = false;
             foreach (var tagButton in detailTags)
             {
-                tagButton.CheckBox.SetPressedNoSignal(pressed);
-                found = true;
-                break;
+                if (tagButton.Name == tag)
+                {
+                    found = true;
+                    tagButton.CheckBox.SetPressedNoSignal(pressed);
+                    break;
+                }
             }
 
             if (!found)

@@ -1,11 +1,29 @@
 [gd_resource type="Theme" format=3 uid="uid://dxpd6rckn4unn"]
 
+[ext_resource type="StyleBox" uid="uid://gr5emiqmqj4t" path="res://Resources/hero_button_style_box.tres" id="1_rpoj5"]
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j4s34"]
 content_margin_left = 4.0
 content_margin_top = 4.0
 content_margin_right = 4.0
 content_margin_bottom = 4.0
 bg_color = Color(0, 0.5137255, 1, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7ygoy"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+bg_color = Color(0.25882354, 0.25882354, 0.25882354, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.5137255, 1, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
@@ -46,6 +64,8 @@ expand_margin_bottom = 2.0
 
 [resource]
 Button/styles/hover = SubResource("StyleBoxFlat_j4s34")
+Button/styles/hover_pressed = ExtResource("1_rpoj5")
+Button/styles/pressed = SubResource("StyleBoxFlat_7ygoy")
 CheckBox/colors/checkbox_checked_color = Color(0, 0.49019608, 1, 1)
 CheckBox/styles/focus = SubResource("StyleBoxFlat_8cjo3")
 FoldableContainer/styles/focus = SubResource("StyleBoxEmpty_lq07f")

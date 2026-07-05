@@ -3,14 +3,14 @@
 [ext_resource type="Texture2D" uid="uid://dok5hq0awp215" path="res://preview.gif" id="1_o8fq1"]
 [ext_resource type="Script" uid="uid://tfoin5jteh51" path="res://Scripts/WallpaperPreview.cs" id="1_v73oy"]
 
-[node name="WallpaperPreview" type="Button" unique_id=1685030092 node_paths=PackedStringArray("Preview", "Label", "Button")]
+[node name="WallpaperPreview" type="Button" unique_id=1685030092 node_paths=PackedStringArray("Preview", "Label")]
 custom_minimum_size = Vector2(261, 261)
 offset_right = 256.0
 offset_bottom = 256.0
+toggle_mode = true
 script = ExtResource("1_v73oy")
 Preview = NodePath("MarginContainer/TextureRect")
 Label = NodePath("MarginContainer/PanelContainer/Label")
-Button = NodePath(".")
 
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=443208177]
 layout_mode = 1

@@ -11,6 +11,8 @@
 [ext_resource type="Script" uid="uid://cajodgb4wqc73" path="res://Scripts/UiController.cs" id="8_epkga"]
 [ext_resource type="PackedScene" uid="uid://ce6qf8gwbbjku" path="res://Scenes/playlist_creator.tscn" id="9_4ckoh"]
 [ext_resource type="PackedScene" uid="uid://chxec4yvhnyqu" path="res://Scenes/foldable_tag_container.tscn" id="10_pnowx"]
+[ext_resource type="Texture2D" uid="uid://bibd7lcgikb8w" path="res://Icons/ambiguous.svg" id="11_5n2sy"]
+[ext_resource type="Texture2D" uid="uid://dsdfbkn11k84p" path="res://Icons/ambiguous_disabled.svg" id="12_txtg5"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_epkga"]
 content_margin_left = 2.0
@@ -232,6 +234,8 @@ WallpaperContainer = NodePath("../Body/VBoxContainer/Browser/ScrollContainer/VBo
 PlaylistCreator = NodePath("../PlaylistCreator")
 FilterTagContainer = NodePath("../Body/VBoxContainer/Browser/FilterPanel/MarginContainer/ScrollContainer/ScrollSpacerContainer/TagButtonContainer")
 FoldableTagContainerScene = ExtResource("10_pnowx")
+AmbiguousCheckBoxEnabled = ExtResource("11_5n2sy")
+AmbiguousCheckBoxDisabled = ExtResource("12_txtg5")
 
 [node name="PlaylistCreator" parent="." unique_id=66200200 instance=ExtResource("9_4ckoh")]
 visible = false
