@@ -7,12 +7,6 @@ using System.Collections.Generic;
 public partial class WELoader : Node
 {
     [Export]
-    public string WEWorkshopPath = @"C:\Program Files (x86)\Steam\steamapps\workshop\content\431960";
-    [Export]
-    public string WELocalPath = @"C:\Program Files (x86)\Steam\steamapps\common\wallpaper_engine\projects\myprojects";
-    [Export]
-    public string WEPrefsPath = @"C:\Program Files (x86)\Steam\steamapps\common\wallpaper_engine\config.json";
-    [Export]
     Container WallpaperPreviewContainer;
     [Export]
     PackedScene WallpaperPreviewScene;
@@ -29,8 +23,9 @@ public partial class WELoader : Node
     public override void _Ready()
     {
         Globals.Preferences = LoadWEPrefs();
-        var wallpapers = LoadWallpapersFrom(WEWorkshopPath);
-        wallpapers.AddRange(LoadWallpapersFrom(WELocalPath));
+        Globals.LoadedWallpapers.Clear();
+        var wallpapers = LoadWallpapersFrom(ToolsDataManager.WEWorkshopPath);
+        wallpapers.AddRange(LoadWallpapersFrom(ToolsDataManager.WELocalPath));
         wallpapers.Sort((w1, w2) => String.Compare(w1.Info.Title, w2.Info.Title, StringComparison.InvariantCultureIgnoreCase));
         foreach (var wallpaper in wallpapers)
         {
@@ -41,7 +36,7 @@ public partial class WELoader : Node
 
     public static string GetPrefsPath()
     {
-        return _instance.WEPrefsPath;
+        return ToolsDataManager.WEPrefsPath;
     }
 
     public List<WallpaperPreview> LoadWallpapersFrom(string path)
@@ -157,10 +152,10 @@ public partial class WELoader : Node
 
     private Dictionary LoadWEPrefs()
     {
-        var file = FileAccess.Open(WEPrefsPath, FileAccess.ModeFlags.Read);
+        var file = FileAccess.Open(ToolsDataManager.WEPrefsPath, FileAccess.ModeFlags.Read);
         if (file is null)
         {
-            GD.PrintErr($"Failed to open config file at {WEPrefsPath}, reason: " + FileAccess.GetOpenError());
+            GD.PrintErr($"Failed to open config file at {ToolsDataManager.WEPrefsPath}, reason: " + FileAccess.GetOpenError());
             return null; ;
         }
         var prefs = file.GetAsText();

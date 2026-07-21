@@ -1,0 +1,59 @@
+[gd_scene format=3 uid="uid://csfx0ujgd6w81"]
+
+[ext_resource type="Script" uid="uid://6icd51hc56mo" path="res://Scripts/SettingsEditor.cs" id="1_3ikmd"]
+[ext_resource type="Theme" uid="uid://dxpd6rckn4unn" path="res://Resources/main_theme.tres" id="1_bu2mg"]
+[ext_resource type="PackedScene" uid="uid://dhubo2ul6wyiy" path="res://Scenes/string_setting.tscn" id="2_i551f"]
+[ext_resource type="Theme" uid="uid://cjckkb8jxwok" path="res://Resources/title.tres" id="4_gdyt6"]
+[ext_resource type="Theme" uid="uid://cuxc4yyeyw8ej" path="res://Resources/hero_button.tres" id="5_35rvt"]
+
+[node name="SettingsEditor" type="PanelContainer" unique_id=171648894 node_paths=PackedStringArray("settingsContainer")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_bu2mg")
+script = ExtResource("1_3ikmd")
+settingsContainer = NodePath("MarginContainer/ScrollContainer/VBoxContainer/OptionContainer")
+stringSetting = ExtResource("2_i551f")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=421762313]
+layout_mode = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 20
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer" unique_id=1850628288]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/ScrollContainer" unique_id=1180953022]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="MarginContainer/ScrollContainer/VBoxContainer" unique_id=551918272]
+layout_mode = 2
+theme = ExtResource("4_gdyt6")
+text = "Settings"
+
+[node name="Control" type="Control" parent="MarginContainer/ScrollContainer/VBoxContainer" unique_id=436706231]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="OptionContainer" type="VBoxContainer" parent="MarginContainer/ScrollContainer/VBoxContainer" unique_id=643414243]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Control2" type="Control" parent="MarginContainer/ScrollContainer/VBoxContainer" unique_id=1691675340]
+custom_minimum_size = Vector2(0, 250)
+layout_mode = 2
+
+[node name="DoneButton" type="Button" parent="MarginContainer" unique_id=1793805349]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 8
+theme = ExtResource("5_35rvt")
+text = "Done"
+
+[connection signal="pressed" from="MarginContainer/DoneButton" to="." method="DonePressed"]

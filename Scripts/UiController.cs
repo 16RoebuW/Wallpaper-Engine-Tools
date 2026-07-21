@@ -31,6 +31,8 @@ public partial class UiController : Node
     Texture2D AmbiguousCheckBoxEnabled;
     [Export]
     Texture2D AmbiguousCheckBoxDisabled;
+    [Export]
+    Label NoWallpapersLoaded;
 
     private List<WallpaperPreview> selectedWallpapers = [];
 
@@ -47,6 +49,8 @@ public partial class UiController : Node
 
     public override void _Ready()
     {
+        NoWallpapersLoaded.Visible = Globals.LoadedWallpapers.Count == 0;
+
         var prefs = Globals.Preferences[Globals.UserName].AsGodotDictionary();
         if (prefs is null)
         {
@@ -96,6 +100,11 @@ public partial class UiController : Node
     public override void _ExitTree()
     {
         ToolsDataManager.SaveFilter(filter);
+    }
+
+    private void OnOptionsButtonPressed()
+    {
+        GetTree().ChangeSceneToFile("res://Scenes/settings_editor.tscn");
     }
 
     private void FilterWallpaperPreviews()

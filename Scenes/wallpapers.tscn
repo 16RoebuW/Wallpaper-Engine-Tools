@@ -75,7 +75,7 @@ size_flags_horizontal = 3
 [node name="Browser" type="HSplitContainer" parent="Body/VBoxContainer" unique_id=2051906914]
 layout_mode = 2
 size_flags_vertical = 3
-split_offsets = PackedInt32Array(0, 1, 0)
+split_offsets = PackedInt32Array(0, 1)
 dragging_enabled = false
 dragger_visibility = 2
 
@@ -118,26 +118,51 @@ custom_minimum_size = Vector2(0, 500)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ScrollContainer" type="ScrollContainer" parent="Body/VBoxContainer/Browser" unique_id=2066032603]
+[node name="Control" type="Control" parent="Body/VBoxContainer/Browser" unique_id=1273222825]
 layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Body/VBoxContainer/Browser/Control" unique_id=2066032603]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_horizontal = 3
 horizontal_scroll_mode = 0
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Body/VBoxContainer/Browser/ScrollContainer" unique_id=1588124585]
+[node name="VBoxContainer" type="VBoxContainer" parent="Body/VBoxContainer/Browser/Control/ScrollContainer" unique_id=1588124585]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="Wallpapers" type="FlowContainer" parent="Body/VBoxContainer/Browser/ScrollContainer/VBoxContainer" unique_id=1429505857]
+[node name="Wallpapers" type="FlowContainer" parent="Body/VBoxContainer/Browser/Control/ScrollContainer/VBoxContainer" unique_id=1429505857]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 alignment = 1
 
-[node name="ScrollSpacer" type="Control" parent="Body/VBoxContainer/Browser/ScrollContainer/VBoxContainer" unique_id=1357822708]
+[node name="ScrollSpacer" type="Control" parent="Body/VBoxContainer/Browser/Control/ScrollContainer/VBoxContainer" unique_id=1357822708]
 custom_minimum_size = Vector2(0, 500)
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="NoWallpapersLabel" type="Label" parent="Body/VBoxContainer/Browser/Control" unique_id=1452171760]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.39215687)
+theme_override_font_sizes/font_size = 48
+text = "
+No wallpapers loaded
+
+Configure the application paths in the options menu (top left)"
+horizontal_alignment = 1
+autowrap_mode = 3
 
 [node name="DetailsPanel" type="Panel" parent="Body/VBoxContainer/Browser" unique_id=1176715614]
 clip_contents = true
@@ -218,11 +243,11 @@ text = "Create Playlist"
 
 [node name="WELoader" type="Node" parent="." unique_id=46521743 node_paths=PackedStringArray("WallpaperPreviewContainer")]
 script = ExtResource("1_1h7kx")
-WallpaperPreviewContainer = NodePath("../Body/VBoxContainer/Browser/ScrollContainer/VBoxContainer/Wallpapers")
+WallpaperPreviewContainer = NodePath("../Body/VBoxContainer/Browser/Control/ScrollContainer/VBoxContainer/Wallpapers")
 WallpaperPreviewScene = ExtResource("2_5v4cw")
 PlaceholderImageTexture = ExtResource("7_s0iw1")
 
-[node name="UIController" type="Node" parent="." unique_id=464476138 node_paths=PackedStringArray("ItemTagContainer", "TagSearchBox", "DetailsTitle", "DetailsPreview", "WallpaperContainer", "PlaylistCreator", "FilterTagContainer")]
+[node name="UIController" type="Node" parent="." unique_id=464476138 node_paths=PackedStringArray("ItemTagContainer", "TagSearchBox", "DetailsTitle", "DetailsPreview", "WallpaperContainer", "PlaylistCreator", "FilterTagContainer", "NoWallpapersLoaded")]
 script = ExtResource("8_epkga")
 TagOptionScene = ExtResource("2_g8jsr")
 ItemTagContainer = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/ScrollContainer/ScrollSpacerContainer/TagButtonContainer")
@@ -230,17 +255,19 @@ TagSearchBox = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContai
 DetailsTitle = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/Label")
 DetailsPreview = NodePath("../Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/TextureRect")
 MainTheme = ExtResource("1_tmsnl")
-WallpaperContainer = NodePath("../Body/VBoxContainer/Browser/ScrollContainer/VBoxContainer/Wallpapers")
+WallpaperContainer = NodePath("../Body/VBoxContainer/Browser/Control/ScrollContainer/VBoxContainer/Wallpapers")
 PlaylistCreator = NodePath("../PlaylistCreator")
 FilterTagContainer = NodePath("../Body/VBoxContainer/Browser/FilterPanel/MarginContainer/ScrollContainer/ScrollSpacerContainer/TagButtonContainer")
 FoldableTagContainerScene = ExtResource("10_pnowx")
 AmbiguousCheckBoxEnabled = ExtResource("11_5n2sy")
 AmbiguousCheckBoxDisabled = ExtResource("12_txtg5")
+NoWallpapersLoaded = NodePath("../Body/VBoxContainer/Browser/Control/NoWallpapersLabel")
 
 [node name="PlaylistCreator" parent="." unique_id=66200200 instance=ExtResource("9_4ckoh")]
 visible = false
 layout_mode = 1
 
+[connection signal="pressed" from="Body/VBoxContainer/OptionsBar/HBoxContainer/OptionsButton" to="UIController" method="OnOptionsButtonPressed"]
 [connection signal="pressed" from="Body/VBoxContainer/Browser/FilterPanel/MarginContainer/ScrollContainer/ScrollSpacerContainer/ClearButton" to="UIController" method="OnFilterClearedPressed"]
 [connection signal="text_changed" from="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/TagSearch" to="UIController" method="OnTagSearchTextChanged"]
 [connection signal="pressed" from="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/AddTagButton" to="UIController" method="OnAddTagPressed"]

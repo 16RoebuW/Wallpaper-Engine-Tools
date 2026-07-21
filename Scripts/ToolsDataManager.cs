@@ -2,21 +2,88 @@ using Godot;
 using Godot.Collections;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 public partial class ToolsDataManager : Node
 {
+    // Why did I do it like this D: ... This should just be a dict of string -> variant. Would be so much less code
+    private static string _WEWorkshopPath = @"C:\Program Files (x86)\Steam\steamapps\workshop\content\431960";
+    private static string _WELocalPath = @"C:\Program Files (x86)\Steam\steamapps\common\wallpaper_engine\projects\myprojects";
+    private static string _WEPrefsPath = @"C:\Program Files (x86)\Steam\steamapps\common\wallpaper_engine\config.json";
+
+    [UserSetting("Wallpaper Engine Workshop Path")]
+    public static string WEWorkshopPath { 
+        get { return _WEWorkshopPath; } 
+        set
+        {
+            if (!DirAccess.DirExistsAbsolute(value))
+            {
+                throw new ArgumentException("Directory does not exist");
+            }
+            _WEWorkshopPath = value;
+        } 
+    }
+
+    [UserSetting("Wallpaper Engine Local Wallpaper Path")]
+    public static string WELocalPath
+    {
+        get { return _WELocalPath; }
+        set
+        {
+            if (!DirAccess.DirExistsAbsolute(value))
+            {
+                throw new ArgumentException("Directory does not exist");
+            }
+            _WELocalPath = value;
+        }
+    }
+
+    [UserSetting("Wallpaper Engine Preferences File")]
+    public static string WEPrefsPath
+    {
+        get { return _WEPrefsPath; }
+        set
+        {
+            if (!FileAccess.FileExists(value))
+            {
+                throw new ArgumentException("File does not exist");
+            }
+            _WEPrefsPath = value;
+        }
+    }
+
     const string SaveDataLocation = "user://";
     const string CustomTagsName = "custom_tags.json";
+    const string WallpaperDataPrefix = "wallpapers/";
     const string WallpaperDataSuffix = ".json";
     const string BackupPrefix = "backups/";
-    const string PrefsName = "config.json";
+    const string PrefsBackupName = "config.json";
     const string FilterName = "filters.json";
+    const string ToolsConfigName = "config.ini";
 
     public static ToolsDataManager Instance;
 
+    // Fill in a dictionary of the default values we've written above. Sucks because there's no way to store the default value in an attribute.
+    private System.Collections.Generic.Dictionary<PropertyInfo, object> defaultValues = [];
+
     public override void _Ready()
     {
+        SetSettingDefaults();
         Instance = this;
+        LoadUserSettings();
+    }
+
+    private void SetSettingDefaults()
+    {
+        foreach (var property in typeof(ToolsDataManager).GetProperties())
+        {
+            var setting = property.GetCustomAttribute<UserSettingAttribute>();
+            if (setting == null)
+            {
+                continue;
+            }
+            defaultValues.Add(property, property.GetValue(this));
+        }
     }
 
     public static void SaveFilter(HashSet<Tag> filters)
@@ -24,13 +91,13 @@ public partial class ToolsDataManager : Node
         Godot.Collections.Dictionary<string, Array<string>> godotVersion = [];
         foreach (var tag in filters)
         {
-            if (godotVersion.ContainsKey(tag.Category))
+            if (godotVersion.TryGetValue(tag.Category, out Array<string> value))
             {
-                godotVersion.Add(tag.Category, [tag.Name]);
+                value.Add(tag.Name);
             } 
             else
             {
-                godotVersion[tag.Category].Add(tag.Name);
+                godotVersion.Add(tag.Category, [tag.Name]);
             }
         }
         string json = Json.Stringify(godotVersion);
@@ -123,7 +190,7 @@ public partial class ToolsDataManager : Node
             return;
         }
         string json = Json.Stringify(data, "\t");
-        var path = FullPath(wallpaperID + WallpaperDataSuffix);
+        var path = FullPath(WallpaperDataPrefix + wallpaperID + WallpaperDataSuffix);
         using var file = FileAccess.Open(path, FileAccess.ModeFlags.Write);
         if (file is null)
         {
@@ -142,7 +209,7 @@ public partial class ToolsDataManager : Node
             return [];
         }
 
-        var path = FullPath(wallpaperID + WallpaperDataSuffix);
+        var path = FullPath(WallpaperDataPrefix + wallpaperID + WallpaperDataSuffix);
 
         if (!FileAccess.FileExists(path))
         {
@@ -192,7 +259,7 @@ public partial class ToolsDataManager : Node
             return;
         }
 
-        var path = FullPath(BackupPrefix + date + "-" + PrefsName);
+        var path = FullPath(BackupPrefix + date + "-" + PrefsBackupName);
         using var file = FileAccess.Open(path, FileAccess.ModeFlags.Write);
         if (file is null)
         {
@@ -206,5 +273,138 @@ public partial class ToolsDataManager : Node
     public static void BackupPreferences()
     {
         BackupPreferences(Globals.PreferencesString);
+    }
+
+    public static List<UserSetting> GetUserSettings()
+    {
+        List<UserSetting> settings = [];
+
+        foreach (var property in typeof(ToolsDataManager).GetProperties())
+        {
+            var setting = property.GetCustomAttribute<UserSettingAttribute>();
+            if (setting == null)
+            {
+                continue;
+            }
+
+            var propertyType = property.PropertyType;
+            settings.Add(new UserSetting(setting.Name, Instance.defaultValues[property], propertyType, () => { return property.GetValue(Instance); }, (object val) => {
+                if (val.GetType() != propertyType)
+                {
+                    GD.PrintErr($"Invalid type ({val.GetType()}) for '{setting.Name}', expected {propertyType}");
+                    return;
+                }
+                property.SetValue(Instance, val);
+                GD.Print($"Set {property.Name} to {val}");
+            }
+            ));
+        }
+
+        return settings;
+    }
+
+    public static void SaveUserSettings()
+    {
+        var config = new ConfigFile();
+        foreach (var property in typeof(ToolsDataManager).GetProperties())
+        {
+            var setting = property.GetCustomAttribute<UserSettingAttribute>();
+            if (setting == null)
+            {
+                continue;
+            }
+
+            var propertyType = property.PropertyType;
+            var propertyVal = property.GetValue(Instance);
+            if (propertyType != propertyVal.GetType())
+            {
+                GD.Print($"Invalid type ({propertyVal.GetType()}) for '{setting.Name}', expected {propertyType}");
+                continue;
+            }
+
+            dynamic d = propertyVal; // Oh fuck
+
+            config.SetValue("Settings", property.Name, Variant.CreateFrom(d));
+        }
+
+        config.Save(FullPath(ToolsConfigName));
+    }
+
+    public static void LoadUserSettings()
+    {
+        var config = new ConfigFile();
+
+        Error err = config.Load(FullPath(ToolsConfigName));
+
+        // If the file didn't load, ignore it.
+        if (err != Error.Ok)
+        {
+            return;
+        }
+
+        const string section = "Settings";
+
+        if (!config.HasSection(section))
+        {
+            GD.Print("Config was invalid");
+            return;
+        }
+
+        foreach (var property in typeof(ToolsDataManager).GetProperties())
+        {
+            var setting = property.GetCustomAttribute<UserSettingAttribute>();
+            if (setting == null)
+            {
+                continue;
+            }
+
+            if (!config.HasSectionKey(section, property.Name))
+            {
+                continue;
+            }
+
+            Variant loadedVal = config.GetValue(section, property.Name);
+            var propertyType = property.PropertyType;
+            var variantType = loadedVal.Obj.GetType();
+            if (variantType != propertyType)
+            {
+                GD.Print($"Invalid type loaded ({variantType}) for '{setting.Name}', expected {propertyType}");
+                continue;
+            }
+
+            property.SetValue(Instance, loadedVal.Obj);
+        }
+    }
+}
+
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+public partial class UserSettingAttribute : Attribute
+{
+    public string Name { get; }
+    public object DefaultValue { get; set; }
+
+    public UserSettingAttribute(string humanReadableName)
+    {
+        Name = humanReadableName;
+    }
+}
+
+public partial class UserSetting
+{
+    private Func<object> getter;
+    private Action<object> setter;
+
+    public string HumanReadableName { get; }
+    public object Value { get { return getter(); } set { setter(value); } }
+    public object DefaultValue { get; }
+    public Type PropertyType { get; }
+
+    public UserSetting(string name, object defaultValue, Type propertyType, Func<object> getter, Action<object> setter)
+    {
+        DefaultValue = defaultValue;
+        HumanReadableName = name;
+        PropertyType = propertyType;
+        this.getter = getter;
+        this.setter = setter;
     }
 }
