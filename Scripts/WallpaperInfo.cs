@@ -12,9 +12,8 @@ public partial class WallpaperInfo
     public string Title { get; }
     public string PreviewPath { get; } = null;
     public string FullPath { get; } = null;
-    public System.Collections.Generic.HashSet<string> Tags { get; } = [];
-
-    private Dictionary CustomData = [];
+    public HashSet<Tag> Tags { get {  return GetTags(); } }
+    private HashSet<string> stringTags { get; } = [];
 
     public static WallpaperInfo From(string json, string fullPath)
     {
@@ -40,13 +39,18 @@ public partial class WallpaperInfo
             preview = dict["preview"].AsString();
         }
 
+        if (dict.ContainsKey("category") && dict["category"].AsString() != "Wallpaper")
+        {
+            GD.PrintErr("Not a wallpaper"); // There is actually no problem with these, we just can't exclude them from playlists until I add special tag support
+            return null;
+        }
+
         return new WallpaperInfo(dict, fullPath.Split("/").Last(), title, fullPath, preview);
     }
 
-    public void AddCustomData(Dictionary data)
+    public void LoadCustomData(Dictionary data)
     {
-        CustomData = data;
-        LoadTags(CustomData);
+        LoadTags(data);
     }
 
     private void LoadTags(Dictionary tagDict)
@@ -58,7 +62,7 @@ public partial class WallpaperInfo
 
         foreach (var tag in tagDict["tags"].AsGodotArray())
         {
-            Tags.Add(tag.ToString());
+            stringTags.Add(tag.ToString());
         }
     }
 
@@ -100,5 +104,38 @@ public partial class WallpaperInfo
         PreviewPath = previewPath;
 
         LoadTags(WEData);
+    }
+
+    public HashSet<string> GetStringTags()
+    {
+        return stringTags;
+    }
+
+    private HashSet<Tag> GetTags()
+    {
+        // Colour doesn't matter, it is not used for comparison
+        HashSet<Tag> tags = [];
+        foreach (string tag in stringTags)
+        {
+            tags.Add(new Tag(tag));
+        }
+        foreach (var tag in Globals.GetSpecialTags())
+        {
+            if (Globals.HasSpecialTag(this, tag))
+            {
+                tags.Add(tag);
+            }
+        }
+        return tags;
+    }
+
+    public void AddTag(string tag)
+    {
+        stringTags.Add(tag);
+    }
+
+    public void RemoveTag(string tag)
+    {
+        stringTags.Remove(tag);
     }
 }

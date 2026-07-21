@@ -43,25 +43,26 @@ public partial class PlaylistCreator : Control
 
     private int lastSelectedTab = 0;
     private int queryBoxOffset;
-    // Because we need a fixed order. Using the dict will *probably* work, but this is safer
-    private List<(string tag, Color colour)> tagsList = [];
+    // Maintain our own copy because we need a fixed order. Using the dict will *probably* work, but this is safer
+    private List<Tag> tagsList = [];
 
     public override void _Ready()
     {
         AddRuleButton.GetPopup().IdPressed += OnAddRulePressed;
-        foreach (var kv in Globals.GetTagsEnumerator())
+        foreach (var tag in Globals.GetTagsEnumerator())
         {
             var node = TagLabelScene.Instantiate<Control>();
             var label = node.GetNode<Label>("Label");
-            label.Text = kv.Key;
-            node.SelfModulate = kv.Value;
-            var brightness = 0.2126 * kv.Value.R + 0.7152 * kv.Value.G + 0.0722 * kv.Value.B;
+            label.Text = tag.Name;
+            var col = tag.Colour;
+            node.SelfModulate = col;
+            var brightness = 0.2126 * col.R + 0.7152 * col.G + 0.0722 * col.B;
             if (brightness > 0.5)
             {
                 label.AddThemeColorOverride("font_color", new Color(0,0,0));
             }
             TagNameContainer.AddChild(node);
-            tagsList.Add((kv.Key, kv.Value));
+            tagsList.Add(tag);
         }
         TagNameContainer.ItemRectChanged += () =>
         {
@@ -90,7 +91,7 @@ public partial class PlaylistCreator : Control
             return;
         }
 
-        List<(RuleSymbol, HashSet<string>)> filterList = CollectFilter();
+        List<(RuleSymbol, HashSet<Tag>)> filterList = CollectFilter();
 
         try
         {
@@ -102,8 +103,7 @@ public partial class PlaylistCreator : Control
             }
             var playlist = GetPlaylistDict(name, wallpapers);
             ToolsDataManager.BackupPreferences();
-            Godot.Collections.Array prefsPlaylists = Globals.LoadFromUntrustworthyDict(Globals.Preferences, [Globals.UserName, "general", "playlists"]).AsGodotArray();
-            prefsPlaylists.Add(playlist);
+            UpdatePrefs(name, playlist);
             var json = Json.Stringify(Globals.Preferences, indent: "\t");
             using var file = FileAccess.Open(WELoader.GetPrefsPath(), FileAccess.ModeFlags.Write);
             file.StoreString(json);
@@ -117,19 +117,36 @@ public partial class PlaylistCreator : Control
         }
     }
 
+    private static void UpdatePrefs(string playlistName, Dictionary playlist)
+    {
+        Godot.Collections.Array prefsPlaylists = Globals.LoadFromUntrustworthyDict(Globals.Preferences, [Globals.UserName, "general", "playlists"]).AsGodotArray();
+        foreach (var existingPlaylist in prefsPlaylists)
+        {
+            if (existingPlaylist.AsGodotDictionary()["name"].AsString().Equals(playlistName))
+            {
+                prefsPlaylists.Remove(existingPlaylist);
+                GD.Print("Overwriting existing playlist...");
+                break;
+            }
+        }
+        prefsPlaylists.Add(playlist);
+    }
+
     public Dictionary GetPlaylistDict(string name, List<WallpaperInfo> wallpapers)
     {
         Array<string> files = [];
         foreach (var wallpaper in wallpapers)
         {
             string playlistFile;
-            if (wallpaper.WEData["type"].ToString() == "scene" && !FileAccess.FileExists(wallpaper.FullPath + "/scene.json"))
+            string originalFileName = wallpaper.WEData["file"].ToString();
+            // Edge case for workshop scene wallpapers
+            if (wallpaper.WEData["type"].ToString().Equals("scene", StringComparison.InvariantCultureIgnoreCase) && !FileAccess.FileExists(wallpaper.FullPath + "/" + originalFileName))
             {
-                playlistFile = "scene.pkg"; // Strange edge case for workshop files
+                playlistFile = originalFileName[..originalFileName.LastIndexOf('.')] + ".pkg";
             } 
             else
             {
-                playlistFile = wallpaper.WEData["file"].ToString();
+                playlistFile = originalFileName;
             }
             string fileName = wallpaper.FullPath + "/" + playlistFile;
             files.Add(fileName);
@@ -142,7 +159,7 @@ public partial class PlaylistCreator : Control
         };
     }
 
-    private List<WallpaperInfo> FilterWallpapers(List<Func<Stack<bool>, HashSet<string>, bool>> operations, int max = 0)
+    private List<WallpaperInfo> FilterWallpapers(List<Func<Stack<bool>, HashSet<Tag>, bool>> operations, int max = 0)
     {
         List<WallpaperInfo> filtered = [];
         foreach (var wallpaper in Globals.LoadedWallpapers)
@@ -202,7 +219,7 @@ public partial class PlaylistCreator : Control
 
     private void RefreshPreview()
     {
-        List<(RuleSymbol, HashSet<string>)> filterList = CollectFilter();
+        List<(RuleSymbol, HashSet<Tag>)> filterList = CollectFilter();
 
         try
         {
@@ -227,19 +244,19 @@ public partial class PlaylistCreator : Control
         }
     }
 
-    private List<(RuleSymbol, HashSet<string>)> CollectFilter()
+    private List<(RuleSymbol, HashSet<Tag>)> CollectFilter()
     {
-        List<(RuleSymbol, HashSet<string>)> filterList = [];
+        List<(RuleSymbol, HashSet<Tag>)> filterList = [];
         for (int i = queryBoxOffset; i < QueryContainer.GetChildCount(); i++)
         {
             FilterRule rule = QueryContainer.GetChild<FilterRule>(i);
-            HashSet<string> tags = [];
+            HashSet<Tag> tags = [];
             if (rule.Rule == RuleSymbol.Any || rule.Rule == RuleSymbol.All)
             {
                 var tagIndices = rule.GetCheckedTagIndices();
                 foreach (var tagIndex in tagIndices)
                 {
-                    tags.Add(tagsList[tagIndex].tag);
+                    tags.Add(tagsList[tagIndex]);
                 }
             }
             filterList.Add((rule.Rule, tags));
@@ -298,12 +315,12 @@ public partial class PlaylistCreator : Control
         rule.GetParent().MoveChild(rule, to + 1);
     }
 
-    private List<Func<Stack<bool>, HashSet<string>, bool>> ParseFilter(List<(RuleSymbol, HashSet<string>)> symbols)
+    private List<Func<Stack<bool>, HashSet<Tag>, bool>> ParseFilter(List<(RuleSymbol, HashSet<Tag>)> symbols)
     {
         // https://en.wikipedia.org/wiki/Shunting_yard_algorithm#The_algorithm_in_detail
 
-        Stack<(RuleSymbol op, Func<Stack<bool>, HashSet<string>, bool> fn)> operatorStack = [];
-        List<Func<Stack<bool>, HashSet<string>, bool>> output = [];
+        Stack<(RuleSymbol op, Func<Stack<bool>, HashSet<Tag>, bool> fn)> operatorStack = [];
+        List<Func<Stack<bool>, HashSet<Tag>, bool>> output = [];
         int resultSize = 0; // To check that the operations actually result in a final answer
 
         foreach (var (symbol, filter) in symbols)
@@ -319,7 +336,7 @@ public partial class PlaylistCreator : Control
             else if (symbol == RuleSymbol.Not || symbol == RuleSymbol.And || symbol == RuleSymbol.Or)
             {
                 var fn = GetFunction(symbol, filter);
-                while (operatorStack.Count > 0 && operatorStack.Peek().op != RuleSymbol.OpenBracket && operatorStack.Peek().op >= symbol) {
+                while (operatorStack.Count > 0 && operatorStack.Peek().op != RuleSymbol.OpenBracket && operatorStack.Peek().op < symbol) {
                     output.Add(operatorStack.Pop().fn);
                 }
                 operatorStack.Push((symbol, fn));
@@ -335,7 +352,11 @@ public partial class PlaylistCreator : Control
             else if (symbol == RuleSymbol.CloseBracket) 
             {
                 /* If the stack runs out without finding a left parenthesis, then there are mismatched parentheses. */
-                while (operatorStack.Peek().op != RuleSymbol.OpenBracket) { output.Add(operatorStack.Pop().fn); }
+                while (operatorStack.Count > 0 && operatorStack.Peek().op != RuleSymbol.OpenBracket) { output.Add(operatorStack.Pop().fn); }
+                if (operatorStack.Count == 0)
+                {
+                    throw new ArgumentException("Unbalanced braces");
+                }
                 operatorStack.Pop();
             }
         }
@@ -356,31 +377,31 @@ public partial class PlaylistCreator : Control
         return output;
     }
 
-    private static Func<Stack<bool>, HashSet<string>, bool> GetFunction(RuleSymbol symbol, HashSet<string> filter)
+    private static Func<Stack<bool>, HashSet<Tag>, bool> GetFunction(RuleSymbol symbol, HashSet<Tag> filter)
     {
         return symbol switch
         {
-            RuleSymbol.Any => (Stack<bool> stack, HashSet<string> tags) =>
+            RuleSymbol.Any => (Stack<bool> stack, HashSet<Tag> tags) =>
                 {
                     return filter.Intersect(tags).Any();
                 }
             ,
-            RuleSymbol.All => (Stack<bool> stack, HashSet<string> tags) =>
+            RuleSymbol.All => (Stack<bool> stack, HashSet<Tag> tags) =>
                 {
                     return filter.Intersect(tags).Count() == filter.Count;
                 }
             ,
-            RuleSymbol.And => (Stack<bool> stack, HashSet<string> tags) =>
+            RuleSymbol.And => (Stack<bool> stack, HashSet<Tag> tags) =>
                 {
                     return stack.Pop() & stack.Pop();
                 }
             ,
-            RuleSymbol.Or => (Stack<bool> stack, HashSet<string> tags) =>
+            RuleSymbol.Or => (Stack<bool> stack, HashSet<Tag> tags) =>
                 {
                     return stack.Pop() | stack.Pop();
                 }
             ,
-            RuleSymbol.Not => (Stack<bool> stack, HashSet<string> tags) =>
+            RuleSymbol.Not => (Stack<bool> stack, HashSet<Tag> tags) =>
                 {
                     return !stack.Pop();
                 }

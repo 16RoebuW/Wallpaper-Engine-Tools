@@ -98,7 +98,7 @@ public partial class WELoader : Node
     private void LoadCustomData(WallpaperInfo info) 
     {
         var data = ToolsDataManager.LoadCustomData(info.Identifier);
-        info.AddCustomData(data);
+        info.LoadCustomData(data);
     }
 
     private Texture2D LoadPreviewImage(WallpaperPreview preview, string absoluteDir)

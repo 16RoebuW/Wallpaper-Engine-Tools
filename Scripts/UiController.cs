@@ -2,7 +2,6 @@ using Godot;
 using Godot.Collections;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using Dictionary = Godot.Collections.Dictionary;
 
@@ -40,11 +39,9 @@ public partial class UiController : Node
 
     private HashSet<TagButton> filteredDetailTags = [];
     
-    private System.Collections.Generic.Dictionary<string, HashSet<string>> filter = [];
+    private HashSet<Tag> filter = [];
 
     private string oldText = "longer_than_blank";
-
-    private readonly string defaultTagType = "normal";
 
     private Button fakeFocussedNode;
 
@@ -59,31 +56,46 @@ public partial class UiController : Node
 
         LoadBuiltinTags(prefs);
 
-        foreach (var kv in Globals.GetBuiltinTags())
+        foreach (var tag in Globals.GetBuiltinTags())
         {
-            NewDetailsTagNode(kv.Key, true, kv.Value, "Built in");
-            NewFilterTagNode(kv.Key, kv.Value, "Built in");
+            NewDetailsTagNode(tag, true, "Built in");
+            NewFilterTagNode(tag, "Built in");
         }
 
         LoadCustomTags();
 
-        foreach (var kv in Globals.GetCustomTags())
+        foreach (var tag in Globals.GetCustomTags())
         {
-            NewDetailsTagNode(kv.Key, colour: kv.Value, category: "Custom");
-            NewFilterTagNode(kv.Key, kv.Value, "Custom");
+            NewDetailsTagNode(tag, category: "Custom");
+            NewFilterTagNode(tag, "Custom");
         }
 
         LoadSpecialTags(prefs);
 
-        foreach (string tagType in Globals.SupportedSpecialTags)
+        foreach (var tag in Globals.GetSpecialTags())
         {
-            foreach (var kv in Globals.GetSpecialTags(tagType))
-            {
-                NewFilterTagNode(kv.Key, kv.Value, "Meta", tagType);
-            }
+            NewFilterTagNode(tag, "Meta");
         }
 
         TagSearchBox.Editable = false;
+
+        filter = ToolsDataManager.LoadFilter();
+        foreach (var tag in filter)
+        {
+            foreach (var tagNode in filterTags)
+            {
+                if (tagNode.Name == tag.Name)
+                {
+                    tagNode.CheckBox.SetPressedNoSignal(true);
+                }
+            }
+        }
+        FilterWallpaperPreviews();
+    }
+
+    public override void _ExitTree()
+    {
+        ToolsDataManager.SaveFilter(filter);
     }
 
     private void FilterWallpaperPreviews()
@@ -96,49 +108,21 @@ public partial class UiController : Node
                 return;
             }
             wallpaper.Show();
-            foreach (var tagType in filter)
+            if (!WallpaperMatchesTags(wallpaper.Info, filter))
             {
-                if (!WallpaperMatchesTags(wallpaper.Info, tagType))
-                {
-                    wallpaper.Hide();
-                    break;
-                }
+                wallpaper.Hide();
             }
         }
     }
 
-    private bool WallpaperMatchesTags(WallpaperInfo wallpaper, KeyValuePair<string, HashSet<string>> tagType)
+    private bool WallpaperMatchesTags(WallpaperInfo wallpaper, HashSet<Tag> tags)
     {
-        if (tagType.Key == defaultTagType)
-        {
-            foreach (var tag in tagType.Value)
-            {
-                if (!wallpaper.Tags.Contains(tag))
-                {
-                    return false;
-                }
-            }
-        }
-        else
-        {
-            foreach (var tag in tagType.Value)
-            {
-                if (!Globals.HasSpecialTag(wallpaper, tagType.Key, tag))
-                {
-                    return false;
-                }
-            }
-        }
-
-        return true;
+        return tags.Intersect(wallpaper.Tags).Count() == tags.Count;
     }
 
     private void OnFilterClearedPressed()
     {
-        foreach (var kv in filter)
-        {
-            kv.Value.Clear();
-        }
+        filter.Clear();
         foreach (var btn in filterTags)
         {
             btn.CheckBox.SetPressedNoSignal(false);
@@ -193,13 +177,13 @@ public partial class UiController : Node
         }
     }
 
-    private TagButton AddCustomTag(string tag, Color? colour = null)
+    private TagButton AddCustomTag(string tagName, Color? colour = null)
     {
-        var tagColour = colour ?? new Color(1, 1, 1);
-        Globals.AddCustomTag(tag, tagColour);
+        var tag = new Tag(tagName, colour: colour);
+        Globals.AddCustomTag(tag);
         ToolsDataManager.SaveCustomTags(Globals.GetCustomTags());
-        NewFilterTagNode(tag, tagColour, category: "Custom");
-        return NewDetailsTagNode(tag, colour: tagColour, category: "Custom");
+        NewFilterTagNode(tag, "Custom");
+        return NewDetailsTagNode(tag, category: "Custom");
     }
 
     private void RemoveCustomTag(string tag)
@@ -222,9 +206,9 @@ public partial class UiController : Node
         Dictionary data = [];
         Array<string> tags = [];
         var customTags = Globals.GetCustomTags();
-        foreach (var tag in info.Tags)
+        foreach (var tag in info.GetStringTags())
         {
-            if (customTags.ContainsKey(tag))
+            if (customTags.Any(c => tag.Equals(c.Name)))
             {
                 tags.Add(tag);
             }
@@ -265,11 +249,11 @@ public partial class UiController : Node
     {
         if (tagged)
         {
-            item.Tags.Add(tag);
+            item.AddTag(tag);
         } 
         else
         {
-            item.Tags.Remove(tag);
+            item.RemoveTag(tag);
         }
 
         ToolsDataManager.SaveCustomData(item.Identifier, GetCustomWallpaperData(item));
@@ -295,11 +279,11 @@ public partial class UiController : Node
         try
         {
             var current = Globals.LoadFromUntrustworthyDict(prefs, ["general", "browser", "filterinfo", "installed", "tags"]);
-            Godot.Collections.Dictionary<string, Color> tags = [];
+            HashSet<Tag> tags = [];
 
             foreach (var tag in current.AsGodotDictionary().Keys)
             {
-                tags.Add(tag.AsString(), new Color(1,1,1));
+                tags.Add(new Tag(tag.AsString()));
             }
             Globals.SetBuiltinTags(tags);
         }
@@ -313,17 +297,16 @@ public partial class UiController : Node
     private void LoadSpecialTags(Dictionary prefs)
     {
         // Built in special tags
+        HashSet<Tag> tags = [];
         foreach (string tagType in Globals.SupportedSpecialTags)
         {
             try
             {
-                Godot.Collections.Dictionary<string, Color> tags = [];
                 var current = Globals.LoadFromUntrustworthyDict(prefs, ["general", "browser", "filterinfo", "installed", tagType]);
                 foreach (var tag in current.AsGodotDictionary().Keys)
                 {
-                    tags.Add(tag.AsString(), new Color(1, 1, 1));
+                    tags.Add(new Tag(tag.AsString(), tagType));
                 }
-                Globals.SetSpecialTags(tagType, tags);
             }
             catch (KeyNotFoundException)
             {
@@ -332,28 +315,25 @@ public partial class UiController : Node
         }
 
         // Custom special tags
-        Globals.SetSpecialTags("thumbnail", new() { {"Thumbnail", new Color(1,1,1)}, { "No thumbnail", new Color(1, 1, 1) } });
+        tags.UnionWith([new Tag("Thumbnail", "thumbnail"), new Tag("No thumbnail", "thumbnail")]);
 
         string[] colours = ["Red", "Orange", "Yellow", "LimeGreen", "DodgerBlue", "Purple", "HotPink", "White", "Black"];
-        Godot.Collections.Dictionary<string, Color> colourTags = [];
         foreach (string colour in colours)
         {
-            colourTags.Add(colour, new Color(colour));
+            tags.Add(new Tag(colour, "colour", new Color(colour)));
         }
-        Globals.SetSpecialTags("colour", colourTags);
+
+        Globals.SetSpecialTags(tags);
     }
 
-    private TagButton NewDetailsTagNode(string tag, bool disabled=false, Color? colour = null, string category = null)
+    private TagButton NewDetailsTagNode(Tag tag, bool disabled=false, string category = null)
     {
         TagButton node = TagOptionScene.Instantiate<TagButton>();
-        node.CheckBox.Text = tag;
+        node.CheckBox.Text = tag.Name;
         node.CheckBox.Disabled = disabled;
-        node.Name = tag;
-        if (colour is Color notNull)
-        {
-            node.ColorPicker.Color = notNull;
-            node.Icon.SelfModulate = notNull;
-        }
+        node.Name = tag.Name;
+        node.ColorPicker.Color = tag.Colour;
+        node.Icon.SelfModulate = tag.Colour;
         node.CheckBox.Toggled += (toggledOn) => OnDetailsTagToggled(node, toggledOn);
         if (category != null)
         {
@@ -374,23 +354,16 @@ public partial class UiController : Node
         return node;
     }
 
-    private TagButton NewFilterTagNode(string tag, Color? colour = null, string category = null, string specialType = null)
+    private TagButton NewFilterTagNode(Tag tag, string category = null)
     {
         TagButton node = TagOptionScene.Instantiate<TagButton>();
-        node.CheckBox.Text = tag;
-        node.Name = tag;
-        if (specialType == null)
-        {
-            node.CheckBox.Toggled += (toggledOn) => OnFilterTagToggled(tag, toggledOn);
-        } else {
-            node.CheckBox.Toggled += (toggledOn) => OnSpecialFilterTagToggled(specialType, tag, toggledOn);
-        }
-        if (colour is Color notNull)
-        {
-            node.ColorPicker.Color = notNull;
-            node.Icon.SelfModulate = notNull;
-        }
+        node.CheckBox.Text = tag.Name;
+        node.Name = tag.Name;
+        node.CheckBox.Toggled += (toggledOn) => OnFilterTagToggled(tag, toggledOn);
+        node.ColorPicker.Color = tag.Colour;
+        node.Icon.SelfModulate = tag.Colour;
         node.ColorPicker.Hide();
+
         if (category != null)
         {
             if (FilterTagContainer.HasNode(category))
@@ -414,39 +387,14 @@ public partial class UiController : Node
         return node;
     }
 
-    private void OnSpecialFilterTagToggled(string specialType, string tag, bool toggledOn)
+    private void OnFilterTagToggled(Tag tag, bool toggledOn)
     {
         if (toggledOn)
         {
-            if (!filter.TryGetValue(specialType, out HashSet<string> value))
-            {
-                filter.Add(specialType, [tag]);
-            }
-            else
-            {
-                value.Add(tag);
-            }
-        }
-        else
-        {
-            filter[specialType].Remove(tag);
-        }
-        FilterWallpaperPreviews();
-    }
-
-    private void OnFilterTagToggled(string tag, bool toggledOn)
-    {
-        if (toggledOn)
-        {
-            if (!filter.TryGetValue(defaultTagType, out HashSet<string> value))
-            {
-                filter.Add(defaultTagType, [tag]);
-            } else {
-                value.Add(tag);
-            }
+            filter.Add(tag);
         } else
         {
-            filter[defaultTagType].Remove(tag);
+            filter.Remove(tag);
         }
         FilterWallpaperPreviews();
     }
@@ -510,11 +458,11 @@ public partial class UiController : Node
     {
         if (wallpapers.Count == 0) { return; }
 
-        Godot.Collections.Dictionary<string, int> tagCounts = [];
+        System.Collections.Generic.Dictionary<string, int> tagCounts = [];
 
         foreach (var wallpaper in wallpapers)
         {
-            foreach (var tag in wallpaper.Info.Tags)
+            foreach (var tag in wallpaper.Info.GetStringTags())
             {
                 if (tagCounts.TryGetValue(tag, out int val))
                 {

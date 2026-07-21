@@ -1,6 +1,7 @@
 using Godot;
 using Godot.Collections;
 using System;
+using System.Collections.Generic;
 
 public partial class ToolsDataManager : Node
 {
@@ -9,6 +10,7 @@ public partial class ToolsDataManager : Node
     const string WallpaperDataSuffix = ".json";
     const string BackupPrefix = "backups/";
     const string PrefsName = "config.json";
+    const string FilterName = "filters.json";
 
     public static ToolsDataManager Instance;
 
@@ -17,12 +19,65 @@ public partial class ToolsDataManager : Node
         Instance = this;
     }
 
-    public static void SaveCustomTags(Dictionary<string, Color> tags)
+    public static void SaveFilter(HashSet<Tag> filters)
     {
-        Dictionary<string, string> preprocessed = [];
-        foreach (var kv in tags)
+        Godot.Collections.Dictionary<string, Array<string>> godotVersion = [];
+        foreach (var tag in filters)
         {
-            preprocessed.Add(kv.Key, kv.Value.ToHtml(false));
+            if (godotVersion.ContainsKey(tag.Category))
+            {
+                godotVersion.Add(tag.Category, [tag.Name]);
+            } 
+            else
+            {
+                godotVersion[tag.Category].Add(tag.Name);
+            }
+        }
+        string json = Json.Stringify(godotVersion);
+        using var file = FileAccess.Open(FullPath(FilterName), FileAccess.ModeFlags.Write);
+        if (file is null)
+        {
+            GD.PrintErr($"Failed to open '{FullPath(FilterName)}': {FileAccess.GetOpenError()}");
+            return;
+        }
+        file.StoreString(json);
+    }
+
+    public static HashSet<Tag> LoadFilter()
+    {
+        HashSet<Tag> res = [];
+
+        if (!FileAccess.FileExists(FullPath(FilterName)))
+        {
+            return [];
+        }
+
+        try
+        {
+            using var file = FileAccess.Open(FullPath(FilterName), FileAccess.ModeFlags.Read);
+            var result = Json.ParseString(file.GetAsText()).AsGodotDictionary();
+            foreach (var kv in result)
+            {
+                foreach (var tag in kv.Value.AsGodotArray<string>())
+                {
+                    res.Add(new Tag(tag, kv.Key.AsString()));
+                }
+            }
+            return res;
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr("Failed to read custom tags file:" + e.Message);
+            return [];
+        }
+    }
+
+    public static void SaveCustomTags(HashSet<Tag> tags)
+    {
+        Godot.Collections.Dictionary<string, string> preprocessed = [];
+        foreach (var tag in tags)
+        {
+            preprocessed.Add(tag.Name, tag.Colour.ToHtml(false));
         }
         string json = Json.Stringify(preprocessed, "\t");
         using var file = FileAccess.Open(FullPath(CustomTagsName), FileAccess.ModeFlags.Write);
@@ -34,7 +89,7 @@ public partial class ToolsDataManager : Node
         file.StoreString(json);
     }
 
-    public static Dictionary<string, Color> LoadCustomTags()
+    public static HashSet<Tag> LoadCustomTags()
     {
         if (!FileAccess.FileExists(FullPath(CustomTagsName)))
         {
@@ -45,10 +100,10 @@ public partial class ToolsDataManager : Node
         {
             using var file = FileAccess.Open(FullPath(CustomTagsName), FileAccess.ModeFlags.Read);
             var result = Json.ParseString(file.GetAsText()).AsGodotDictionary();
-            Dictionary<string, Color> parsed = [];
+            HashSet<Tag> parsed = [];
             foreach (var kv in result)
             {
-                parsed.Add(kv.Key.AsString(), Color.FromHtml(kv.Value.AsString()));
+                parsed.Add(new Tag(kv.Key.AsString(), colour: Color.FromHtml(kv.Value.AsString())));
             }
             return parsed;
         }
