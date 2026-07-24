@@ -1,6 +1,7 @@
 using Godot;
 using Godot.Collections;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Dictionary = Godot.Collections.Dictionary;
@@ -39,17 +40,38 @@ public partial class UiController : Node
     private List<TagButton> detailTags = [];
     private List<TagButton> filterTags = [];
 
-    private HashSet<TagButton> filteredDetailTags = [];
-    
-    private HashSet<Tag> filter = [];
+    private SimplePersistentMatcher<TagButton, string> detailTagsMatcher;
+    private SimplePersistentMatcher<WallpaperPreview, string> wallpaperMatcher;
 
-    private string oldText = "longer_than_blank";
+    private HashSet<Tag> filter = [];
 
     private Button fakeFocussedNode;
 
     public override void _Ready()
     {
         NoWallpapersLoaded.Visible = Globals.LoadedWallpapers.Count == 0;
+
+        static int stringLenComparer(string a, string b)
+        {
+            if (b == null) return 1.CompareTo(0);
+            return a.Length.CompareTo(b.Length);
+        }
+
+        List<WallpaperPreview> loadedWallpapers = [];
+        foreach (var node in WallpaperContainer.GetChildren())
+        {
+            if (node is WallpaperPreview preview)
+            {
+                loadedWallpapers.Add(preview);
+            }
+        }
+
+        wallpaperMatcher = new(
+            loadedWallpapers,
+            stringLenComparer,
+            (WallpaperPreview node, string searchText) => {
+                    return node.Info.Title.Contains(searchText, StringComparison.InvariantCultureIgnoreCase);
+            });
 
         var prefs = Globals.Preferences[Globals.UserName].AsGodotDictionary();
         if (prefs is null)
@@ -81,6 +103,11 @@ public partial class UiController : Node
             NewFilterTagNode(tag, "Meta");
         }
 
+        detailTagsMatcher = new(
+            detailTags,
+            stringLenComparer,
+            (TagButton tag, string searchText) => { return tag.Name.ToString().Contains(searchText, StringComparison.InvariantCultureIgnoreCase); });
+
         TagSearchBox.Editable = false;
 
         filter = ToolsDataManager.LoadFilter();
@@ -100,6 +127,20 @@ public partial class UiController : Node
     public override void _ExitTree()
     {
         ToolsDataManager.SaveFilter(filter);
+    }
+
+    private void OnSearchTextChanged(string newText)
+    {
+        wallpaperMatcher.Filter(newText,
+            (added) =>
+            {
+                if (WallpaperMatchesTags(added.Info, filter)) added.Show();
+            },
+            (removed) =>
+            {
+                removed.Hide();
+            }
+        );
     }
 
     private void OnOptionsButtonPressed()
@@ -182,7 +223,7 @@ public partial class UiController : Node
             foreach (var wallpaper in selectedWallpapers) { 
                 SetItemTag(wallpaper.Info, formatted, true);
             }
-            filteredDetailTags.Add(node);
+            detailTagsMatcher.Add(node);
         }
     }
 
@@ -530,42 +571,13 @@ public partial class UiController : Node
 
     public void OnTagSearchTextChanged(string newText)
     {
-        if (newText.Length < oldText.Length)
-        {
-            filteredDetailTags.Clear();
-            foreach (TagButton tag in detailTags)
-            {
-                if (tag.Name.ToString().Contains(newText, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    filteredDetailTags.Add(tag);
-                    tag.Visible = true;
-                }
-                else
-                {
-                    tag.Visible = false;
-                }
-            }
-        }
-        else
-        {
-            foreach (TagButton tag in filteredDetailTags)
-            {
-                if (tag.Name.ToString().Contains(newText, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    continue;
-                }
-                filteredDetailTags.Remove(tag);
-                tag.Visible = false;
-            }
-        }
+        detailTagsMatcher.Filter(newText, (tag) => tag.Show(), (tag) => tag.Hide());
 
         var topTag = GetNextVisibleTag(-1);
         if (topTag is not null)
         {
             FakeFocus(topTag.CheckBox);
         }
-
-        oldText = newText;
     }
 
     private TagButton GetNextVisibleTag(int from)

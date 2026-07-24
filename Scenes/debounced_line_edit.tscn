@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://bu4v1ektlo667"]
+
+[ext_resource type="Script" uid="uid://nmrem25j5t45" path="res://Scripts/DebouncedLineEdit.cs" id="1_qnj5x"]
+
+[node name="DebouncedLineEdit" type="LineEdit" unique_id=1120499059]
+script = ExtResource("1_qnj5x")
+
+[connection signal="text_changed" from="." to="." method="LineEditTextChanged"]
+[connection signal="text_submitted" from="." to="." method="LineEditTextSubmitted"]

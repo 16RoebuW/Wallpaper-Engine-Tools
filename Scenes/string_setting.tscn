@@ -1,9 +1,10 @@
 [gd_scene format=3 uid="uid://dhubo2ul6wyiy"]
 
 [ext_resource type="Script" uid="uid://coddyr5fg2c5h" path="res://Scenes/StringSetting.cs" id="1_i5w7x"]
+[ext_resource type="PackedScene" uid="uid://bu4v1ektlo667" path="res://Scenes/debounced_line_edit.tscn" id="2_13xdj"]
 [ext_resource type="Texture2D" uid="uid://dw614067g5s32" path="res://Icons/arrow-rotate-left-solid.png" id="2_alvv6"]
 
-[node name="StringSetting" type="HBoxContainer" unique_id=1739197646 node_paths=PackedStringArray("Title", "Error", "Editor", "ResetButton", "debouncer")]
+[node name="StringSetting" type="HBoxContainer" unique_id=1739197646 node_paths=PackedStringArray("Title", "Error", "Editor", "ResetButton")]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -14,9 +15,8 @@ alignment = 1
 script = ExtResource("1_i5w7x")
 Title = NodePath("HBoxContainer/Title")
 Error = NodePath("HBoxContainer/Error")
-Editor = NodePath("HBoxContainer/LineEdit")
+Editor = NodePath("HBoxContainer/DebouncedLineEdit")
 ResetButton = NodePath("Button")
-debouncer = NodePath("HBoxContainer/Timer")
 
 [node name="HBoxContainer" type="VBoxContainer" parent="." unique_id=696656223]
 layout_mode = 2
@@ -27,16 +27,12 @@ size_flags_vertical = 0
 layout_mode = 2
 text = "Foo"
 
-[node name="LineEdit" type="LineEdit" parent="HBoxContainer" unique_id=368678442]
+[node name="DebouncedLineEdit" parent="HBoxContainer" unique_id=1120499059 instance=ExtResource("2_13xdj")]
 layout_mode = 2
 
 [node name="Error" type="Label" parent="HBoxContainer" unique_id=965993061]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92224306, 0.34340224, 0.323472, 1)
-
-[node name="Timer" type="Timer" parent="HBoxContainer" unique_id=470808215]
-wait_time = 0.3
-one_shot = true
 
 [node name="Button" type="Button" parent="." unique_id=660511872]
 custom_minimum_size = Vector2(32, 32)
@@ -48,7 +44,3 @@ text = " "
 icon = ExtResource("2_alvv6")
 icon_alignment = 1
 expand_icon = true
-
-[connection signal="text_changed" from="HBoxContainer/LineEdit" to="." method="LineEditTextChanged"]
-[connection signal="text_submitted" from="HBoxContainer/LineEdit" to="." method="LineEditTextSubmitted"]
-[connection signal="timeout" from="HBoxContainer/Timer" to="." method="TimerTimeout"]

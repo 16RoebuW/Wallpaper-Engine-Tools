@@ -35,7 +35,7 @@ public partial class SettingsEditor : Control
                     }
                 }
 
-                node.DebouncedTextChanged += updateSetting;
+                node.Editor.DebouncedTextChanged += updateSetting;
                 node.ResetButton.Pressed += () =>
                 {
                     string defaultValue = setting.DefaultValue as string;

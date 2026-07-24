@@ -6,6 +6,7 @@
 [ext_resource type="Theme" uid="uid://dxpd6rckn4unn" path="res://Resources/main_theme.tres" id="1_tmsnl"]
 [ext_resource type="PackedScene" uid="uid://bw1h3gyq6yg2x" path="res://Scenes/wallpaper_preview.tscn" id="2_5v4cw"]
 [ext_resource type="PackedScene" uid="uid://d3gxrhcawkiu4" path="res://Scenes/tag_button.tscn" id="2_g8jsr"]
+[ext_resource type="PackedScene" uid="uid://bu4v1ektlo667" path="res://Scenes/debounced_line_edit.tscn" id="3_txtg5"]
 [ext_resource type="Theme" uid="uid://cuxc4yyeyw8ej" path="res://Resources/hero_button.tres" id="5_ucp0k"]
 [ext_resource type="Texture2D" uid="uid://33h5yuj6sijj" path="res://Icons/no-image.png" id="7_s0iw1"]
 [ext_resource type="Script" uid="uid://cajodgb4wqc73" path="res://Scripts/UiController.cs" id="8_epkga"]
@@ -62,7 +63,7 @@ icon = ExtResource("1_4p432")
 icon_alignment = 1
 expand_icon = true
 
-[node name="LineEdit" type="LineEdit" parent="Body/VBoxContainer/OptionsBar/HBoxContainer" unique_id=1496631291]
+[node name="DebouncedLineEdit" parent="Body/VBoxContainer/OptionsBar/HBoxContainer" unique_id=1120499059 instance=ExtResource("3_txtg5")]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 24
@@ -268,6 +269,7 @@ visible = false
 layout_mode = 1
 
 [connection signal="pressed" from="Body/VBoxContainer/OptionsBar/HBoxContainer/OptionsButton" to="UIController" method="OnOptionsButtonPressed"]
+[connection signal="DebouncedTextChanged" from="Body/VBoxContainer/OptionsBar/HBoxContainer/DebouncedLineEdit" to="UIController" method="OnSearchTextChanged"]
 [connection signal="pressed" from="Body/VBoxContainer/Browser/FilterPanel/MarginContainer/ScrollContainer/ScrollSpacerContainer/ClearButton" to="UIController" method="OnFilterClearedPressed"]
 [connection signal="text_changed" from="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/TagSearch" to="UIController" method="OnTagSearchTextChanged"]
 [connection signal="pressed" from="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer/AddTagButton" to="UIController" method="OnAddTagPressed"]

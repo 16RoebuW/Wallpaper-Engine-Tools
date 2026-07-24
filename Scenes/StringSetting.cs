@@ -8,27 +8,7 @@ public partial class StringSetting : Container
     [Export]
     public Label Error;
     [Export]
-    public LineEdit Editor;
+    public DebouncedLineEdit Editor;
     [Export]
     public Button ResetButton;
-    [Export]
-    Timer debouncer;
-
-    [Signal]
-    public delegate void DebouncedTextChangedEventHandler(string newText);
-
-    private void LineEditTextChanged(string newText)
-    {
-        debouncer.Start();
-    }
-
-    private void LineEditTextSubmitted(string newText)
-    {
-        EmitSignal(SignalName.DebouncedTextChanged, Editor.Text);
-    }
-
-    private void TimerTimeout()
-    {
-        EmitSignal(SignalName.DebouncedTextChanged, Editor.Text);
-    }
 }
