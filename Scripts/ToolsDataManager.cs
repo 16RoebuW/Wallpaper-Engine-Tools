@@ -58,7 +58,7 @@ public partial class ToolsDataManager : Node
     const string WallpaperDataSuffix = ".json";
     const string BackupPrefix = "backups/";
     const string PrefsBackupName = "config.json";
-    const string FilterName = "filters.json";
+    const string ViewSettingsName = "view_settings.json";
     const string ToolsConfigName = "config.ini";
 
     public static ToolsDataManager Instance;
@@ -86,25 +86,28 @@ public partial class ToolsDataManager : Node
         }
     }
 
-    public static void SaveFilter(HashSet<Tag> filters)
+    public static void SaveViewSettings(HashSet<Tag> filters, string sortMode)
     {
-        Godot.Collections.Dictionary<string, Array<string>> godotVersion = [];
+        Godot.Collections.Dictionary res = [];
+        Godot.Collections.Dictionary<string, Array<string>> filterDict = [];
         foreach (var tag in filters)
         {
-            if (godotVersion.TryGetValue(tag.Category, out Array<string> value))
+            if (filterDict.TryGetValue(tag.Category, out Array<string> value))
             {
                 value.Add(tag.Name);
             } 
             else
             {
-                godotVersion.Add(tag.Category, [tag.Name]);
+                filterDict.Add(tag.Category, [tag.Name]);
             }
         }
-        string json = Json.Stringify(godotVersion);
-        using var file = FileAccess.Open(FullPath(FilterName), FileAccess.ModeFlags.Write);
+        res.Add("filters", filterDict);
+        res.Add("sort_mode", sortMode);
+        string json = Json.Stringify(res);
+        using var file = FileAccess.Open(FullPath(ViewSettingsName), FileAccess.ModeFlags.Write);
         if (file is null)
         {
-            GD.PrintErr($"Failed to open '{FullPath(FilterName)}': {FileAccess.GetOpenError()}");
+            GD.PrintErr($"Failed to open '{FullPath(ViewSettingsName)}': {FileAccess.GetOpenError()}");
             return;
         }
         file.StoreString(json);
@@ -114,15 +117,15 @@ public partial class ToolsDataManager : Node
     {
         HashSet<Tag> res = [];
 
-        if (!FileAccess.FileExists(FullPath(FilterName)))
+        if (!FileAccess.FileExists(FullPath(ViewSettingsName)))
         {
             return [];
         }
 
         try
         {
-            using var file = FileAccess.Open(FullPath(FilterName), FileAccess.ModeFlags.Read);
-            var result = Json.ParseString(file.GetAsText()).AsGodotDictionary();
+            using var file = FileAccess.Open(FullPath(ViewSettingsName), FileAccess.ModeFlags.Read);
+            var result = Json.ParseString(file.GetAsText()).AsGodotDictionary().GetValueOrDefault("filters", new Dictionary()).AsGodotDictionary();
             foreach (var kv in result)
             {
                 foreach (var tag in kv.Value.AsGodotArray<string>())
@@ -134,8 +137,23 @@ public partial class ToolsDataManager : Node
         }
         catch (Exception e)
         {
-            GD.PrintErr("Failed to read custom tags file:" + e.Message);
+            GD.PrintErr("Failed to read settings file:" + e.Message);
             return [];
+        }
+    }
+
+    public static string LoadSortMode()
+    {
+        try
+        {
+            using var file = FileAccess.Open(FullPath(ViewSettingsName), FileAccess.ModeFlags.Read);
+            var result = Json.ParseString(file.GetAsText()).AsGodotDictionary().GetValueOrDefault("sort_mode", string.Empty).AsString();
+            return result;
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr("Failed to read settings file:" + e.Message);
+            return string.Empty;
         }
     }
 

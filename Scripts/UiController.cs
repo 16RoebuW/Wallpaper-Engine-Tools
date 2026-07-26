@@ -34,6 +34,8 @@ public partial class UiController : Node
     Texture2D AmbiguousCheckBoxDisabled;
     [Export]
     Label NoWallpapersLoaded;
+    [Export]
+    ButtonGroup SortButtonGroup;
 
     private List<WallpaperPreview> selectedWallpapers = [];
 
@@ -44,12 +46,27 @@ public partial class UiController : Node
     private SimplePersistentMatcher<WallpaperPreview, string> wallpaperMatcher;
 
     private HashSet<Tag> filter = [];
+    private string sortMode = string.Empty;
 
     private Button fakeFocussedNode;
 
     public override void _Ready()
     {
+        SortButtonGroup.Pressed += OnSortGroupPressed;
         NoWallpapersLoaded.Visible = Globals.LoadedWallpapers.Count == 0;
+        sortMode = ToolsDataManager.LoadSortMode();
+        if (sortMode != string.Empty)
+        {
+            foreach (var button in SortButtonGroup.GetButtons())
+            {
+                if (button is Button textButton && textButton.Text.Equals(sortMode, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    textButton.SetPressedNoSignal(true);
+                    OnSortGroupPressed(button);
+                    break;
+                }
+            }
+        }
 
         static int stringLenComparer(string a, string b)
         {
@@ -126,7 +143,66 @@ public partial class UiController : Node
 
     public override void _ExitTree()
     {
-        ToolsDataManager.SaveFilter(filter);
+        ToolsDataManager.SaveViewSettings(filter, sortMode);
+    }
+
+    private void OnSortGroupPressed(BaseButton pressed)
+    {
+        var textButton = pressed as Button;
+        if (textButton.Text.Equals("name", StringComparison.InvariantCultureIgnoreCase))
+        {
+            SortChildrenBy(WallpaperContainer, (Node a, Node b) =>
+            {
+                if (a is not WallpaperPreview || b is not WallpaperPreview)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return String.Compare((a as WallpaperPreview).Info.Title, (b as WallpaperPreview).Info.Title, true);
+                }
+            });
+        } 
+        else if (textButton.Text.Equals("date modified", StringComparison.InvariantCultureIgnoreCase))
+        {
+            SortChildrenBy(WallpaperContainer, (Node a, Node b) =>
+            {
+                if (a is not WallpaperPreview || b is not WallpaperPreview)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return (b as WallpaperPreview).Info.DateModified.CompareTo((a as WallpaperPreview).Info.DateModified);
+                }
+            });
+        } 
+        else
+        {
+            GD.PrintErr($"Sort button {textButton.Text} not recognised");
+            return;
+        }
+        sortMode = textButton.Text;
+    }
+
+    private static void SortChildrenBy(Node parent, Comparison<Node> comparison)
+    {
+        // Based on https://en.wikipedia.org/wiki/Insertion_sort#Algorithm
+        int i = 1;
+        int count = parent.GetChildCount();
+        while (i < count)
+        {
+            var children = parent.GetChildren();
+            int j = i;
+            var subject = children[j];
+            while (j > 0 && comparison(children[j - 1], subject) > 0)
+            {
+                // Move the smaller node back until it is in order
+                parent.MoveChild(subject, j - 1);
+                j--;
+            }
+            i++;
+        }
     }
 
     private void OnSearchTextChanged(string newText)
@@ -463,6 +539,7 @@ public partial class UiController : Node
 
     public void OnWallpaperLoaded(WallpaperPreview wallpaper)
     {
+        WallpaperContainer.AddChild(wallpaper);
         wallpaper.Toggled += (toggledOn) => OnWallpaperSelected(wallpaper, toggledOn);
     }
 

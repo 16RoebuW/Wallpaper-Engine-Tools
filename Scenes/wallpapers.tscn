@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://bw1h3gyq6yg2x" path="res://Scenes/wallpaper_preview.tscn" id="2_5v4cw"]
 [ext_resource type="PackedScene" uid="uid://d3gxrhcawkiu4" path="res://Scenes/tag_button.tscn" id="2_g8jsr"]
 [ext_resource type="PackedScene" uid="uid://bu4v1ektlo667" path="res://Scenes/debounced_line_edit.tscn" id="3_txtg5"]
+[ext_resource type="ButtonGroup" uid="uid://bgywgkl7jmyrq" path="res://Resources/sort_button_group.tres" id="4_40eya"]
 [ext_resource type="Theme" uid="uid://cuxc4yyeyw8ej" path="res://Resources/hero_button.tres" id="5_ucp0k"]
 [ext_resource type="Texture2D" uid="uid://33h5yuj6sijj" path="res://Icons/no-image.png" id="7_s0iw1"]
 [ext_resource type="Script" uid="uid://cajodgb4wqc73" path="res://Scripts/UiController.cs" id="8_epkga"]
@@ -104,6 +105,20 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 0
+
+[node name="Label" type="Label" parent="Body/VBoxContainer/Browser/FilterPanel/MarginContainer/ScrollContainer/ScrollSpacerContainer" unique_id=1087082920]
+layout_mode = 2
+text = "Sort by"
+
+[node name="SortByNameButton" type="CheckBox" parent="Body/VBoxContainer/Browser/FilterPanel/MarginContainer/ScrollContainer/ScrollSpacerContainer" unique_id=163870224]
+layout_mode = 2
+button_group = ExtResource("4_40eya")
+text = "Name"
+
+[node name="SortByDateButton" type="CheckBox" parent="Body/VBoxContainer/Browser/FilterPanel/MarginContainer/ScrollContainer/ScrollSpacerContainer" unique_id=2135937788]
+layout_mode = 2
+button_group = ExtResource("4_40eya")
+text = "Date modified"
 
 [node name="ClearButton" type="Button" parent="Body/VBoxContainer/Browser/FilterPanel/MarginContainer/ScrollContainer/ScrollSpacerContainer" unique_id=1604418817]
 layout_mode = 2
@@ -203,7 +218,7 @@ max_lines_visible = 2
 layout_mode = 2
 focus_next = NodePath(".")
 focus_previous = NodePath(".")
-placeholder_text = "Add tag..."
+placeholder_text = "Add or search tag..."
 emoji_menu_enabled = false
 
 [node name="AddTagButton" type="Button" parent="Body/VBoxContainer/Browser/DetailsPanel/MarginContainer/VBoxContainer" unique_id=1661119720]
@@ -242,9 +257,8 @@ size_flags_horizontal = 4
 theme = ExtResource("5_ucp0k")
 text = "Create Playlist"
 
-[node name="WELoader" type="Node" parent="." unique_id=46521743 node_paths=PackedStringArray("WallpaperPreviewContainer")]
+[node name="WELoader" type="Node" parent="." unique_id=46521743]
 script = ExtResource("1_1h7kx")
-WallpaperPreviewContainer = NodePath("../Body/VBoxContainer/Browser/Control/ScrollContainer/VBoxContainer/Wallpapers")
 WallpaperPreviewScene = ExtResource("2_5v4cw")
 PlaceholderImageTexture = ExtResource("7_s0iw1")
 
@@ -263,6 +277,7 @@ FoldableTagContainerScene = ExtResource("10_pnowx")
 AmbiguousCheckBoxEnabled = ExtResource("11_5n2sy")
 AmbiguousCheckBoxDisabled = ExtResource("12_txtg5")
 NoWallpapersLoaded = NodePath("../Body/VBoxContainer/Browser/Control/NoWallpapersLabel")
+SortButtonGroup = ExtResource("4_40eya")
 
 [node name="PlaylistCreator" parent="." unique_id=66200200 instance=ExtResource("9_4ckoh")]
 visible = false

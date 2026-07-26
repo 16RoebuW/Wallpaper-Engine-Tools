@@ -12,6 +12,8 @@ public partial class WallpaperInfo
     public string Title { get; }
     public string PreviewPath { get; } = null;
     public string FullPath { get; } = null;
+    public ulong DateCreated { get; set; }
+    public ulong DateModified { get; set; }
     public HashSet<Tag> Tags { get {  return GetTags(); } }
     private HashSet<string> stringTags { get; } = [];
 

@@ -7,8 +7,6 @@ using System.Collections.Generic;
 public partial class WELoader : Node
 {
     [Export]
-    Container WallpaperPreviewContainer;
-    [Export]
     PackedScene WallpaperPreviewScene;
     [Export]
     Texture2D PlaceholderImageTexture;
@@ -26,11 +24,6 @@ public partial class WELoader : Node
         Globals.LoadedWallpapers.Clear();
         var wallpapers = LoadWallpapersFrom(ToolsDataManager.WEWorkshopPath);
         wallpapers.AddRange(LoadWallpapersFrom(ToolsDataManager.WELocalPath));
-        wallpapers.Sort((w1, w2) => String.Compare(w1.Info.Title, w2.Info.Title, StringComparison.InvariantCultureIgnoreCase));
-        foreach (var wallpaper in wallpapers)
-        {
-            WallpaperPreviewContainer.AddChild(wallpaper);
-        }
         _instance = this;
     }
 
@@ -59,7 +52,8 @@ public partial class WELoader : Node
                 GD.Print("No project file in " + folderName);
                 continue;
             }
-            var file = FileAccess.Open(dir.GetCurrentDir() + "/" + relativeProjectPath, FileAccess.ModeFlags.Read);
+            var fullFilePath = dir.GetCurrentDir() + "/" + relativeProjectPath;
+            var file = FileAccess.Open(fullFilePath, FileAccess.ModeFlags.Read);
             if (file is null)
             {
                 GD.PrintErr($"Failed to open project file at {relativeProjectPath}, reason: " + FileAccess.GetOpenError());
@@ -74,6 +68,8 @@ public partial class WELoader : Node
                 continue;
             }
             LoadCustomData(info);
+            info.DateModified = FileAccess.GetModifiedTime(fullFilePath);
+            info.DateCreated = Convert.ToUInt64((System.IO.File.GetCreationTimeUtc(fullFilePath).Ticks / 10_000_000) - 62135596800);
 
             WallpaperPreview preview = WallpaperPreviewScene.Instantiate<WallpaperPreview>();
             preview.Info = info;
@@ -88,6 +84,21 @@ public partial class WELoader : Node
             EmitSignal(SignalName.WallpaperLoaded, preview);
         }
         return res;
+    }
+    public static ulong BytesToUInt64(byte[] bytes)
+    {
+        if (bytes == null)
+            throw new ArgumentNullException(nameof(bytes));
+        if (bytes.Length > 8)
+            throw new ArgumentException("Must be 8 elements or fewer", nameof(bytes));
+
+        ulong result = 0;
+        for (int i = 0; i < bytes.Length; i++)
+        {
+            result |= (ulong)bytes[i] << (i * 8);
+        }
+
+        return result;
     }
 
     private void LoadCustomData(WallpaperInfo info) 
